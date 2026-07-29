@@ -3,3 +3,4 @@ demo-out/
 *.exe
 .DS_Store
 /dist/
+sbom.json

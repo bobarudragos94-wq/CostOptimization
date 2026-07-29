@@ -1,0 +1,44 @@
+# systemd unit for the URA collection agent.
+# Least privilege: dedicated user, read-only system, no network access needed
+# by the unit itself (SQL loopback is permitted via IPAddressAllow when the
+# deep SQL collector is enabled; remove those two lines to hard-block sockets).
+[Unit]
+Description=URA utilization & rightsizing agent (temporary monitoring)
+Documentation=file:///opt/ura-agent/docs/DEPLOY_LINUX.md
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/opt/ura-agent/ura-agent run --config /etc/ura-agent/agent.yaml
+Restart=on-failure
+RestartSec=10
+
+User=ura-agent
+Group=ura-agent
+# The agent only needs to read /proc, /sys and write its own data dir.
+ReadWritePaths=/var/lib/ura-agent
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+CapabilityBoundingSet=
+RestrictSUIDSGID=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+# Sockets: loopback only (local SQL Server); tighten to
+# RestrictAddressFamilies=AF_UNIX + IPAddressDeny=any when sql.enabled=false.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+# Overhead guard rails (see docs/BENCHMARK.md).
+MemoryMax=200M
+CPUQuota=25%
+
+[Install]
+WantedBy=multi-user.target

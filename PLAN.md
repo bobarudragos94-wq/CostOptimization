@@ -1,6 +1,6 @@
 # URA — Utilization & Rightsizing Analyzer: MVP Plan
 
-**Status: in progress — see the checklist at the bottom for exactly what is done and what to pick up next.**
+**Status: MVP complete (M1–M7). The remaining follow-up is M8 — real-Windows and live-SQL-Server validation. See the checklist at the bottom.**
 
 This document is the durable plan of record. Any agent or engineer continuing this work
 should read this file first, then `docs/ARCHITECTURE.md`.
@@ -161,12 +161,17 @@ MSI/DEB/RPM packaging (zip + scripts instead), binary signing (readiness documen
 ## 8. Status checklist (update this section as you work)
 
 - [x] M1 scaffold + plan committed
-- [ ] M2 model/config/hostid/store/crypt/bundle + tests
-- [ ] M3 spike engine + stats + tests
-- [ ] M4 agent orchestration, Linux collection, Windows cross-compile, export CLI
-- [ ] M5 SQL detection + collectors + HA + fixture tests
-- [ ] M6 analyzer import/consolidation/recommendations/reports + e2e test
-- [ ] M7 synth generator, sample bundles + reports, docs, deploy scripts, SBOM, benchmark
+- [x] M2 model/config/hostid/store/crypt/bundle + tests
+- [x] M3 spike engine + stats + tests
+- [x] M4 agent orchestration, Linux collection, Windows cross-compile, export CLI
+      (validated live on Linux: run → SIGTERM → restart recovery → export → analyze)
+- [x] M5 SQL detection + collectors + HA + fixture tests (incl. permission-denied
+      fallback, multi-instance memory math, pseudonymized job names)
+- [x] M6 analyzer import/consolidation/recommendations/reports + e2e test
+      (all 6 synthetic hosts classify into their designed categories)
+- [x] M7 synth generator, committed sample bundles + reports (`samples/`),
+      full docs set, deploy scripts, SBOM script, measured benchmark
+      (0.08 % CPU / ~15 MB RSS vs 1 % / 150 MB budget), no-network PASS
 - [ ] M8 (follow-up agent): run agent on a real Windows Server host; validate service
       install/uninstall, registry SQL discovery, SCM service mapping, integrated-auth
       SQL collection against a live instance; wire binary signing; consider MSI/DEB/RPM.

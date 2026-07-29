@@ -1,0 +1,4 @@
+# DEMO KEY — committed intentionally so the sample bundles can be opened.
+# NEVER reuse for a real engagement.
+# ura decryption identity — NEVER copy to monitored servers
+AGE-SECRET-KEY-1LJTKH7X0EQCPU50FGDZT4KMAXUS2QMHQS3GS260JEFH5WHK0UW5S2ZTJ86

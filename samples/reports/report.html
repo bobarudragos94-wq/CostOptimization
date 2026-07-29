@@ -1,0 +1,323 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Utilization & Rightsizing Report</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:1100px;margin:2rem auto;padding:0 1rem;color:#1a2233;line-height:1.5}
+h1{border-bottom:3px solid #2b6cb0;padding-bottom:.4rem}
+h2{color:#2b6cb0;margin-top:2.2rem}
+h3{margin-top:1.6rem}
+table{border-collapse:collapse;margin:.6rem 0;font-size:.92rem}
+td,th{border:1px solid #cbd5e0;padding:.28rem .6rem;text-align:left}
+th{background:#edf2f7}
+code{background:#edf2f7;padding:.08rem .3rem;border-radius:3px}
+li{margin:.15rem 0}
+.small{color:#556;font-size:.85rem}
+</style></head><body>
+<h1>Infrastructure Utilization &amp; Rightsizing Report</h1>
+<p>Generated 2026-07-29 23:38 UTC · schema 1.0.0 · analyzer 0.1.0 · fully offline</p>
+<h2>Fleet overview</h2>
+<table>
+<tr><td>Hosts</td><td>SQL instances</td><td>Allocated vCPU</td><td>Allocated RAM</td><td>Spike events</td></tr>
+<tr><td>6</td><td>3</td><td>68</td><td>248 GB</td><td>29</td></tr>
+</table>
+<p>Recommendation categories:</p>
+<ul>
+<li><code>likely_rightsizing_candidate</code>: 1 host(s)</li>
+<li><code>optimize_recurring_workload_before_rightsizing</code>: 1 host(s)</li>
+<li><code>insufficient_os_headroom</code>: 2 host(s)</li>
+<li><code>no_change_recommended</code>: 1 host(s)</li>
+<li><code>ha_dr_constraint</code>: 1 host(s)</li>
+</ul>
+<p>Indicative upper bound of reclaimable capacity (only candidates, before validation): <strong>4 vCPU, 6 GB RAM</strong>. This is a technical ceiling, not a commitment.</p>
+<h2>Host summaries</h2>
+<h3>web-linux-01 (<code>ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01</code>, linux)</h3>
+<table>
+<tr><td></td><td></td></tr>
+<tr><td>OS</td><td>linux Ubuntu 22.04</td></tr>
+<tr><td>Virtualization</td><td>vm:vmware</td></tr>
+<tr><td>Allocated</td><td>8 vCPU, 16 GB RAM</td></tr>
+<tr><td>Observed</td><td>14 days at 99% coverage</td></tr>
+<tr><td>CPU % (P50/P95/P99/max)</td><td>12 / 19 / 20 / 25</td></tr>
+<tr><td>Longest sustained CPU &gt;70%</td><td>0 min (peak 0%)</td></tr>
+<tr><td>Memory % (P50/P95/P99/max)</td><td>33 / 35 / 35 / 35 (P95 ≈ 5.6 GB)</td></tr>
+<tr><td>Memory pressure</td><td>—</td></tr>
+<tr><td>Disk I/O</td><td>latency P95 3.4 ms, busy P95 14%</td></tr>
+<tr><td>Network</td><td>rx P95 3.0 MB/s, tx P95 1.5 MB/s</td></tr>
+<tr><td>Spikes</td><td>0 event(s), 0 recurring pattern(s)</td></tr>
+</table>
+<p><strong>Recommendation: <code>likely_rightsizing_candidate</code></strong> (confidence 66%, validation required)</p>
+<p>Utilization is consistently far below allocation with no pressure evidence. Strong technical rightsizing candidate — validate with the application owner before resizing.</p>
+<ul>
+<li>suggested vCPU range: <strong>3–4</strong> (currently 8)</li>
+<li>suggested RAM range: <strong>8–10 GB</strong> (currently 16 GB)</li>
+<li>keeps CPU P95 ≤ 70% and RAM P95 + 30% headroom; validate against month-end/quarterly peaks not observed in the window</li>
+</ul>
+<p>Rationale:</p>
+<ul>
+<li>CPU P95 19% and memory P95 35% of allocation over 14 days</li>
+<li>longest sustained CPU period above 70%: 0 minutes</li>
+</ul>
+<h3>batch-linux-02 (<code>ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02</code>, linux)</h3>
+<table>
+<tr><td></td><td></td></tr>
+<tr><td>OS</td><td>linux Ubuntu 22.04</td></tr>
+<tr><td>Virtualization</td><td>vm:vmware</td></tr>
+<tr><td>Allocated</td><td>8 vCPU, 32 GB RAM</td></tr>
+<tr><td>Observed</td><td>14 days at 100% coverage</td></tr>
+<tr><td>CPU % (P50/P95/P99/max)</td><td>14 / 20 / 92 / 100</td></tr>
+<tr><td>Longest sustained CPU &gt;70%</td><td>27 min (peak 95%)</td></tr>
+<tr><td>Memory % (P50/P95/P99/max)</td><td>40 / 41 / 41 / 41 (P95 ≈ 13.1 GB)</td></tr>
+<tr><td>Memory pressure</td><td>—</td></tr>
+<tr><td>Disk I/O</td><td>latency P95 3.4 ms, busy P95 15%</td></tr>
+<tr><td>Network</td><td>rx P95 3.0 MB/s, tx P95 1.5 MB/s</td></tr>
+<tr><td>Spikes</td><td>14 event(s), 1 recurring pattern(s)</td></tr>
+</table>
+<ul>
+<li>🔁 cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)</li>
+<li>probable correlate: python3 (etl-nightly.service) ×14</li>
+</ul>
+<p><strong>Recommendation: <code>optimize_recurring_workload_before_rightsizing</code></strong> (confidence 66%, validation required)</p>
+<p>Baseline utilization is low, but recurring scheduled workloads drive the peaks. Optimize or reschedule those jobs first; rightsizing before that risks extending the job windows.</p>
+<p>Rationale:</p>
+<ul>
+<li>cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)</li>
+</ul>
+<h3>sql-win-01 (<code>ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03</code>, windows)</h3>
+<table>
+<tr><td></td><td></td></tr>
+<tr><td>OS</td><td>windows Microsoft Windows Server 2022 Standard</td></tr>
+<tr><td>Virtualization</td><td>vm:vmware</td></tr>
+<tr><td>Allocated</td><td>16 vCPU, 64 GB RAM</td></tr>
+<tr><td>Observed</td><td>14 days at 100% coverage</td></tr>
+<tr><td>CPU % (P50/P95/P99/max)</td><td>25 / 37 / 92 / 100</td></tr>
+<tr><td>Longest sustained CPU &gt;70%</td><td>27 min (peak 96%)</td></tr>
+<tr><td>Memory % (P50/P95/P99/max)</td><td>90 / 91 / 91 / 91 (P95 ≈ 58.1 GB)</td></tr>
+<tr><td>Memory pressure</td><td>—</td></tr>
+<tr><td>Disk I/O</td><td>latency P95 3.4 ms, busy P95 14%</td></tr>
+<tr><td>Network</td><td>rx P95 3.0 MB/s, tx P95 1.5 MB/s</td></tr>
+<tr><td>Spikes</td><td>14 event(s), 1 recurring pattern(s)</td></tr>
+<tr><td>SQL instances</td><td>ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03</td><td>MSSQLSERVER</td></tr>
+</table>
+<ul>
+<li>🔁 cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)</li>
+<li>probable correlate: sqlservr.exe (MSSQLSERVER) ×14</li>
+</ul>
+<p><strong>Recommendation: <code>insufficient_os_headroom</code></strong> (confidence 66%, validation required)</p>
+<p>Memory headroom is insufficient; do not reduce resources. Consider investigating consumers or adding RAM.</p>
+<p>Rationale:</p>
+<ul>
+<li>memory P95 91% with pressure evidence []</li>
+</ul>
+<h3>sqlag-win-02 (<code>ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa04</code>, windows)</h3>
+<table>
+<tr><td></td><td></td></tr>
+<tr><td>OS</td><td>windows Microsoft Windows Server 2022 Standard</td></tr>
+<tr><td>Virtualization</td><td>vm:vmware</td></tr>
+<tr><td>Allocated</td><td>16 vCPU, 64 GB RAM</td></tr>
+<tr><td>Observed</td><td>14 days at 100% coverage</td></tr>
+<tr><td>CPU % (P50/P95/P99/max)</td><td>47 / 65 / 66 / 72</td></tr>
+<tr><td>Longest sustained CPU &gt;70%</td><td>0 min (peak 0%)</td></tr>
+<tr><td>Memory % (P50/P95/P99/max)</td><td>82 / 83 / 83 / 83 (P95 ≈ 53.0 GB)</td></tr>
+<tr><td>Memory pressure</td><td>—</td></tr>
+<tr><td>Disk I/O</td><td>latency P95 3.4 ms, busy P95 14%</td></tr>
+<tr><td>Network</td><td>rx P95 3.0 MB/s, tx P95 1.5 MB/s</td></tr>
+<tr><td>Spikes</td><td>0 event(s), 0 recurring pattern(s)</td></tr>
+<tr><td>SQL instances</td><td>ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa04</td><td>MSSQLSERVER</td></tr>
+</table>
+<p><strong>Recommendation: <code>no_change_recommended</code></strong> (confidence 66%, validation required)</p>
+<p>Memory utilization or pressure is high enough that reducing capacity would create risk. No reduction recommended.</p>
+<p>Rationale:</p>
+<ul>
+<li>memory P95 83% with pressure evidence []</li>
+</ul>
+<h3>sqlag-win-03 (<code>ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa05</code>, windows)</h3>
+<table>
+<tr><td></td><td></td></tr>
+<tr><td>OS</td><td>windows Microsoft Windows Server 2022 Standard</td></tr>
+<tr><td>Virtualization</td><td>vm:vmware</td></tr>
+<tr><td>Allocated</td><td>16 vCPU, 64 GB RAM</td></tr>
+<tr><td>Observed</td><td>14 days at 100% coverage</td></tr>
+<tr><td>CPU % (P50/P95/P99/max)</td><td>8 / 12 / 13 / 18</td></tr>
+<tr><td>Longest sustained CPU &gt;70%</td><td>0 min (peak 0%)</td></tr>
+<tr><td>Memory % (P50/P95/P99/max)</td><td>76 / 77 / 77 / 77 (P95 ≈ 49.2 GB)</td></tr>
+<tr><td>Memory pressure</td><td>—</td></tr>
+<tr><td>Disk I/O</td><td>latency P95 3.4 ms, busy P95 14%</td></tr>
+<tr><td>Network</td><td>rx P95 3.0 MB/s, tx P95 1.5 MB/s</td></tr>
+<tr><td>Spikes</td><td>0 event(s), 0 recurring pattern(s)</td></tr>
+<tr><td>SQL instances</td><td>ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa05</td><td>MSSQLSERVER</td></tr>
+</table>
+<p><strong>Recommendation: <code>ha_dr_constraint</code></strong> (confidence 66%, validation required)</p>
+<p>This host is an Always On secondary replica. Its low utilization is expected; it must be sized for the primary&#39;s workload after failover. Evaluate together with its replica group only.</p>
+<p>Rationale:</p>
+<ul>
+<li>local SQL instance reports SECONDARY availability-group role</li>
+</ul>
+<h3>mem-linux-03 (<code>ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa06</code>, linux)</h3>
+<table>
+<tr><td></td><td></td></tr>
+<tr><td>OS</td><td>linux Ubuntu 22.04</td></tr>
+<tr><td>Virtualization</td><td>vm:vmware</td></tr>
+<tr><td>Allocated</td><td>4 vCPU, 8 GB RAM</td></tr>
+<tr><td>Observed</td><td>14 days at 100% coverage</td></tr>
+<tr><td>CPU % (P50/P95/P99/max)</td><td>37 / 49 / 50 / 56</td></tr>
+<tr><td>Longest sustained CPU &gt;70%</td><td>0 min (peak 0%)</td></tr>
+<tr><td>Memory % (P50/P95/P99/max)</td><td>94 / 96 / 96 / 96 (P95 ≈ 7.7 GB)</td></tr>
+<tr><td>Memory pressure</td><td>memory PSI pressure (some avg 10.0%); memory PSI pressure (some avg 10.1%); memory PSI pressure (some avg 10.2%); memory PSI pressure (some avg 10.3%); memory PSI pressure (some avg 10.4%); memory PSI pressure (some avg 10.5%); memory PSI pressure (some avg 10.6%); memory PSI pressure (some avg 10.7%); memory PSI pressure (some avg 10.8%); memory PSI pressure (some avg 10.9%); memory PSI pressure (some avg 11.0%); memory PSI pressure (some avg 11.1%); memory PSI pressure (some avg 11.2%); memory PSI pressure (some avg 11.3%); memory PSI pressure (some avg 11.4%); memory PSI pressure (some avg 11.5%); memory PSI pressure (some avg 11.6%); memory PSI pressure (some avg 11.7%); memory PSI pressure (some avg 11.8%); memory PSI pressure (some avg 11.9%); memory PSI pressure (some avg 12.0%); memory PSI pressure (some avg 12.1%); memory PSI pressure (some avg 12.2%); memory PSI pressure (some avg 12.3%); memory PSI pressure (some avg 12.4%); memory PSI pressure (some avg 12.5%); memory PSI pressure (some avg 12.6%); memory PSI pressure (some avg 12.7%); memory PSI pressure (some avg 12.8%); memory PSI pressure (some avg 12.9%); memory PSI pressure (some avg 13.0%); memory PSI pressure (some avg 13.1%); memory PSI pressure (some avg 13.2%); memory PSI pressure (some avg 13.3%); memory PSI pressure (some avg 13.4%); memory PSI pressure (some avg 13.5%); memory PSI pressure (some avg 13.6%); memory PSI pressure (some avg 13.7%); memory PSI pressure (some avg 13.8%); memory PSI pressure (some avg 13.9%); memory PSI pressure (some avg 14.0%); memory PSI pressure (some avg 8.0%); memory PSI pressure (some avg 8.1%); memory PSI pressure (some avg 8.2%); memory PSI pressure (some avg 8.3%); memory PSI pressure (some avg 8.4%); memory PSI pressure (some avg 8.5%); memory PSI pressure (some avg 8.6%); memory PSI pressure (some avg 8.7%); memory PSI pressure (some avg 8.8%); memory PSI pressure (some avg 8.9%); memory PSI pressure (some avg 9.0%); memory PSI pressure (some avg 9.1%); memory PSI pressure (some avg 9.2%); memory PSI pressure (some avg 9.3%); memory PSI pressure (some avg 9.4%); memory PSI pressure (some avg 9.5%); memory PSI pressure (some avg 9.6%); memory PSI pressure (some avg 9.7%); memory PSI pressure (some avg 9.8%); memory PSI pressure (some avg 9.9%); sustained paging activity observed</td></tr>
+<tr><td>Disk I/O</td><td>latency P95 3.4 ms, busy P95 14%</td></tr>
+<tr><td>Network</td><td>rx P95 3.0 MB/s, tx P95 1.5 MB/s</td></tr>
+<tr><td>Spikes</td><td>1 event(s), 0 recurring pattern(s)</td></tr>
+</table>
+<ul>
+<li>probable correlate: java ×1</li>
+</ul>
+<p><strong>Recommendation: <code>insufficient_os_headroom</code></strong> (confidence 66%, validation required)</p>
+<p>Memory headroom is insufficient; do not reduce resources. Consider investigating consumers or adding RAM.</p>
+<p>Rationale:</p>
+<ul>
+<li>memory P95 96% with pressure evidence [memory PSI pressure (some avg 10.0%) memory PSI pressure (some avg 10.1%) memory PSI pressure (some avg 10.2%) memory PSI pressure (some avg 10.3%) memory PSI pressure (some avg 10.4%) memory PSI pressure (some avg 10.5%) memory PSI pressure (some avg 10.6%) memory PSI pressure (some avg 10.7%) memory PSI pressure (some avg 10.8%) memory PSI pressure (some avg 10.9%) memory PSI pressure (some avg 11.0%) memory PSI pressure (some avg 11.1%) memory PSI pressure (some avg 11.2%) memory PSI pressure (some avg 11.3%) memory PSI pressure (some avg 11.4%) memory PSI pressure (some avg 11.5%) memory PSI pressure (some avg 11.6%) memory PSI pressure (some avg 11.7%) memory PSI pressure (some avg 11.8%) memory PSI pressure (some avg 11.9%) memory PSI pressure (some avg 12.0%) memory PSI pressure (some avg 12.1%) memory PSI pressure (some avg 12.2%) memory PSI pressure (some avg 12.3%) memory PSI pressure (some avg 12.4%) memory PSI pressure (some avg 12.5%) memory PSI pressure (some avg 12.6%) memory PSI pressure (some avg 12.7%) memory PSI pressure (some avg 12.8%) memory PSI pressure (some avg 12.9%) memory PSI pressure (some avg 13.0%) memory PSI pressure (some avg 13.1%) memory PSI pressure (some avg 13.2%) memory PSI pressure (some avg 13.3%) memory PSI pressure (some avg 13.4%) memory PSI pressure (some avg 13.5%) memory PSI pressure (some avg 13.6%) memory PSI pressure (some avg 13.7%) memory PSI pressure (some avg 13.8%) memory PSI pressure (some avg 13.9%) memory PSI pressure (some avg 14.0%) memory PSI pressure (some avg 8.0%) memory PSI pressure (some avg 8.1%) memory PSI pressure (some avg 8.2%) memory PSI pressure (some avg 8.3%) memory PSI pressure (some avg 8.4%) memory PSI pressure (some avg 8.5%) memory PSI pressure (some avg 8.6%) memory PSI pressure (some avg 8.7%) memory PSI pressure (some avg 8.8%) memory PSI pressure (some avg 8.9%) memory PSI pressure (some avg 9.0%) memory PSI pressure (some avg 9.1%) memory PSI pressure (some avg 9.2%) memory PSI pressure (some avg 9.3%) memory PSI pressure (some avg 9.4%) memory PSI pressure (some avg 9.5%) memory PSI pressure (some avg 9.6%) memory PSI pressure (some avg 9.7%) memory PSI pressure (some avg 9.8%) memory PSI pressure (some avg 9.9%) sustained paging activity observed]</li>
+</ul>
+<h2>SQL Server instance summaries</h2>
+<h3>MSSQLSERVER on sql-win-01</h3>
+<table>
+<tr><td></td><td></td></tr>
+<tr><td>Version / edition</td><td>15.0.4360.2 / Standard Edition (64-bit)</td></tr>
+<tr><td>HA role</td><td>standalone</td></tr>
+<tr><td>Collection level</td><td>deep</td></tr>
+<tr><td>Host RAM</td><td>64 GB</td></tr>
+<tr><td>min / max server memory</td><td>0 MB / UNLIMITED DEFAULT (2147483647)</td></tr>
+<tr><td>SQL process memory</td><td>57.0 GB (89% of host)</td></tr>
+<tr><td>Total / Target Server Memory</td><td>55.0 / 56.0 GB</td></tr>
+<tr><td>Memory outside memory manager</td><td>2.0 GB</td></tr>
+<tr><td>OS memory headroom</td><td>7.0 GB</td></tr>
+<tr><td>Engine uptime</td><td>76.0 days</td></tr>
+<tr><td>PLE P5 / grants pending max</td><td>5220 s / 0</td></tr>
+<tr><td>Batch req P95 / SQL CPU P95</td><td>1470/s / 54%</td></tr>
+<tr><td>Data-file read latency P95</td><td>5.8 ms</td></tr>
+<tr><td>Top waits</td><td>CXPACKET (10054s), PAGEIOLATCH_SH (4015s)</td></tr>
+<tr><td>SQL-correlated spikes</td><td>14</td></tr>
+</table>
+<ul>
+<li>probable correlation: SQL Agent job: Nightly ETL Load</li>
+</ul>
+<p><strong>Recommendation: <code>sql_memory_configuration_issue</code></strong> (confidence 66%, validation required)</p>
+<p>max server memory is left at its unlimited default (2147483647 MB). SQL Server will grow toward all host RAM and can pressure the OS. Set an explicit limit (suggested ≈ 57 GB for this 64 GB host) before considering any RAM change.</p>
+<ul>
+<li>sys.configurations max server memory (MB) = 2147483647</li>
+</ul>
+<h3>MSSQLSERVER on sqlag-win-02</h3>
+<table>
+<tr><td></td><td></td></tr>
+<tr><td>Version / edition</td><td>15.0.4360.2 / Standard Edition (64-bit)</td></tr>
+<tr><td>HA role</td><td>PRIMARY (AG-CORE)</td></tr>
+<tr><td>Collection level</td><td>deep</td></tr>
+<tr><td>Host RAM</td><td>64 GB</td></tr>
+<tr><td>min / max server memory</td><td>0 MB / 51200 MB</td></tr>
+<tr><td>SQL process memory</td><td>50.5 GB (79% of host)</td></tr>
+<tr><td>Total / Target Server Memory</td><td>48.5 / 49.5 GB</td></tr>
+<tr><td>Memory outside memory manager</td><td>2.0 GB</td></tr>
+<tr><td>OS memory headroom</td><td>13.5 GB</td></tr>
+<tr><td>Engine uptime</td><td>76.0 days</td></tr>
+<tr><td>PLE P5 / grants pending max</td><td>5199 s / 0</td></tr>
+<tr><td>Batch req P95 / SQL CPU P95</td><td>1470/s / 54%</td></tr>
+<tr><td>Data-file read latency P95</td><td>5.8 ms</td></tr>
+<tr><td>Top waits</td><td>CXPACKET (10074s), PAGEIOLATCH_SH (3998s)</td></tr>
+</table>
+<p><strong>Recommendation: <code>no_change_recommended</code></strong> (confidence 66%, validation required)</p>
+<p>SQL memory configuration and observed pressure give no safe reduction opportunity.</p>
+<ul>
+<li>Total 48.5 GB / Target 49.5 GB, PLE P5 5199s, SQL CPU P95 54%</li>
+</ul>
+<h3>MSSQLSERVER on sqlag-win-03</h3>
+<table>
+<tr><td></td><td></td></tr>
+<tr><td>Version / edition</td><td>15.0.4360.2 / Standard Edition (64-bit)</td></tr>
+<tr><td>HA role</td><td>SECONDARY (AG-CORE)</td></tr>
+<tr><td>Collection level</td><td>deep</td></tr>
+<tr><td>Host RAM</td><td>64 GB</td></tr>
+<tr><td>min / max server memory</td><td>0 MB / 51200 MB</td></tr>
+<tr><td>SQL process memory</td><td>50.5 GB (79% of host)</td></tr>
+<tr><td>Total / Target Server Memory</td><td>48.5 / 49.5 GB</td></tr>
+<tr><td>Memory outside memory manager</td><td>2.0 GB</td></tr>
+<tr><td>OS memory headroom</td><td>13.5 GB</td></tr>
+<tr><td>Engine uptime</td><td>76.0 days</td></tr>
+<tr><td>PLE P5 / grants pending max</td><td>5199 s / 0</td></tr>
+<tr><td>Batch req P95 / SQL CPU P95</td><td>5/s / 4%</td></tr>
+<tr><td>Data-file read latency P95</td><td>5.8 ms</td></tr>
+<tr><td>Top waits</td><td>CXPACKET (10074s), PAGEIOLATCH_SH (3998s)</td></tr>
+</table>
+<p><strong>Recommendation: <code>ha_dr_constraint</code></strong> (confidence 66%, validation required)</p>
+<p>Secondary replica of availability group AG-CORE. Do not size from its own (expectedly idle) workload — it must absorb the primary&#39;s load after failover. Assess the replica group together.</p>
+<ul>
+<li>availability-group SECONDARY role detected</li>
+</ul>
+<h2>HA replica groups</h2>
+<ul>
+<li><strong>AG-CORE</strong>: ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa04|MSSQLSERVER (PRIMARY); ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa05|MSSQLSERVER (SECONDARY)</li>
+</ul>
+<p>  - replica servers: sqlag-win-02, sqlag-win-03</p>
+<p>  - Replicas of one availability group: evaluate sizing together; a secondary must absorb the primary&#39;s workload after failover. Topology-level validation required before any resize.</p>
+<h2>Spike report (29 events)</h2>
+<table>
+<tr><td>Host</td><td>Start (UTC)</td><td>Res</td><td>Dur</td><td>Baseline→Peak</td><td>Process / job</td><td>Recurrence</td><td>Conf</td><td>Next validation step</td></tr>
+<tr><td>sql-win-01</td><td>07-15 01:57</td><td>cpu</td><td>25m0s</td><td>22→94</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>batch-linux-02</td><td>07-15 02:02</td><td>cpu</td><td>25m0s</td><td>12→95</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>sql-win-01</td><td>07-16 02:00</td><td>cpu</td><td>25m0s</td><td>22→95</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>batch-linux-02</td><td>07-16 02:00</td><td>cpu</td><td>25m0s</td><td>12→95</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>batch-linux-02</td><td>07-17 01:59</td><td>cpu</td><td>25m0s</td><td>12→97</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>mem-linux-03</td><td>07-17 02:00</td><td>memory</td><td>10m0s</td><td>93→98</td><td>java</td><td></td><td>45%</td><td>Ask the application owner of java whether this burst is expected at this time.</td></tr>
+<tr><td>sql-win-01</td><td>07-17 02:02</td><td>cpu</td><td>25m0s</td><td>22→96</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>batch-linux-02</td><td>07-18 01:57</td><td>cpu</td><td>25m0s</td><td>12→97</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>sql-win-01</td><td>07-18 01:57</td><td>cpu</td><td>25m0s</td><td>22→97</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>batch-linux-02</td><td>07-19 02:00</td><td>cpu</td><td>25m0s</td><td>12→94</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>sql-win-01</td><td>07-19 02:00</td><td>cpu</td><td>25m0s</td><td>22→96</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>sql-win-01</td><td>07-20 01:57</td><td>cpu</td><td>25m0s</td><td>22→96</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>batch-linux-02</td><td>07-20 02:00</td><td>cpu</td><td>25m0s</td><td>12→94</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>sql-win-01</td><td>07-21 02:00</td><td>cpu</td><td>25m0s</td><td>22→95</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>batch-linux-02</td><td>07-21 02:01</td><td>cpu</td><td>25m0s</td><td>12→95</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>batch-linux-02</td><td>07-22 01:57</td><td>cpu</td><td>25m0s</td><td>12→95</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>sql-win-01</td><td>07-22 01:57</td><td>cpu</td><td>25m0s</td><td>22→97</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>sql-win-01</td><td>07-23 01:57</td><td>cpu</td><td>25m0s</td><td>22→95</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>batch-linux-02</td><td>07-23 02:02</td><td>cpu</td><td>25m0s</td><td>12→96</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>sql-win-01</td><td>07-24 02:01</td><td>cpu</td><td>25m0s</td><td>22→96</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>batch-linux-02</td><td>07-24 02:01</td><td>cpu</td><td>25m0s</td><td>12→97</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>batch-linux-02</td><td>07-25 01:59</td><td>cpu</td><td>25m0s</td><td>12→97</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>sql-win-01</td><td>07-25 01:59</td><td>cpu</td><td>25m0s</td><td>22→97</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>sql-win-01</td><td>07-26 02:00</td><td>cpu</td><td>25m0s</td><td>22→96</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>batch-linux-02</td><td>07-26 02:01</td><td>cpu</td><td>25m0s</td><td>12→96</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>batch-linux-02</td><td>07-27 01:57</td><td>cpu</td><td>25m0s</td><td>12→94</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+<tr><td>sql-win-01</td><td>07-27 02:01</td><td>cpu</td><td>25m0s</td><td>22→98</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>sql-win-01</td><td>07-28 01:58</td><td>cpu</td><td>25m0s</td><td>22→94</td><td>sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩</td><td>recurring</td><td>75%</td><td>Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.</td></tr>
+<tr><td>batch-linux-02</td><td>07-28 01:59</td><td>cpu</td><td>25m0s</td><td>12→98</td><td>python3 / etl-nightly.service</td><td>recurring</td><td>75%</td><td>Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.</td></tr>
+</table>
+<ul>
+<li>sql-win-01 <code>cpu</code> 07-15 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-15 02:02: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-16 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-16 02:00: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-17 01:59: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-17 02:02: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-18 01:57: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-18 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-19 02:00: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-19 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-20 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-20 02:00: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-21 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-21 02:01: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-22 01:57: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-22 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-23 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-23 02:02: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-24 02:01: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-24 02:01: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-25 01:59: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-25 01:59: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-26 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-26 02:01: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-27 01:57: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-27 02:01: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>sql-win-01 <code>cpu</code> 07-28 01:58: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window</li>
+<li>batch-linux-02 <code>cpu</code> 07-28 01:59: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window</li>
+</ul>
+<hr>
+<p>*Recommendations are technical capacity assessments based on the observed window only. Every downsizing action requires application-owner validation; peaks outside the monitoring window (month-end, quarterly, failover) must be considered separately.*</p>
+</body></html>

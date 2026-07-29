@@ -1,0 +1,57 @@
+# URA agent configuration. Full reference: docs/CONFIGURATION.md
+# SECURITY: this file must contain no secrets. SQL passwords go into the
+# separate 0600 file referenced by sql.password_file.
+
+agent:
+  # Local spool + state directory (Linux default /var/lib/ura-agent,
+  # Windows default C:\ProgramData\ura-agent).
+  data_dir: /var/lib/ura-agent
+  # Planned monitoring duration in days (30 default, up to 90+ supported).
+  duration_days: 30
+  # PUBLIC age encryption key from 'ura-analyzer keygen' (recipient.txt).
+  # The matching private key must never be copied to this server.
+  recipient: "age1REPLACE_ME"
+  # Future privacy mode: pseudonymize job names in exported data.
+  privacy_mode: false
+
+sampling:
+  host_interval: 15s        # cheap host metrics (CPU/mem/disk/net/PSI)
+  proc_interval: 60s        # top-N process sampling (more expensive)
+  proc_top_n: 10            # bounded process cardinality
+  proc_persist_interval: 5m # how often a top-N snapshot is persisted
+  sql_sample_interval: 60s  # light SQL memory/workload sample
+  sql_inventory_interval: 6h
+  health_interval: 5m
+  sched_interval: 6h        # cron/timers/task-scheduler snapshot
+
+retention:
+  max_spool_mb: 2048        # hard cap on local disk usage
+  max_age_days: 100
+  keep_after_export: false  # delete spooled segments once exported
+
+spikes:
+  cooldown: 10m             # per-series cooldown after an event
+  pre_buffer: 5m            # rolling high-resolution pre-event buffer
+  post_capture: 3m
+  rules:                    # static threshold OR baseline deviation, sustained
+    - { resource: cpu,          static_threshold: 85, sustained: 2m, baseline_k: 4, baseline_floor: 40 }
+    - { resource: memory,       static_threshold: 90, sustained: 2m, baseline_k: 5, baseline_floor: 60 }
+    - { resource: paging,       static_threshold: 500, sustained: 1m, baseline_k: 6, baseline_floor: 100 }
+    - { resource: disk_latency, static_threshold: 50, sustained: 1m, baseline_k: 5, baseline_floor: 10 }
+    - { resource: disk_queue,   static_threshold: 8,  sustained: 1m, baseline_k: 5, baseline_floor: 2 }
+    - { resource: disk_io,      static_threshold: 95, sustained: 2m, baseline_k: 4, baseline_floor: 50 }
+
+sql:
+  enabled: true
+  # Windows: integrated (service account, no stored credentials — preferred).
+  # Linux:   sqllogin + password_file (0600, owned by the service user).
+  auth: sqllogin
+  username: ura_readonly
+  password_file: /etc/ura-agent/sql-password
+  connect_timeout: 5s
+  # Raw SQL text capture is hard-disabled in v1 regardless of this flag.
+  collect_sql_text: false
+
+export:
+  auto_daily: true          # export an encrypted bundle once per UTC day
+  export_dir: /var/lib/ura-agent/export

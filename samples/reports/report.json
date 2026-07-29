@@ -1,0 +1,1333 @@
+{
+  "generated_at": "2026-07-29T23:38:13.512436017Z",
+  "schema_version": "1.0.0",
+  "tool_version": "0.1.0",
+  "fleet_summary": {
+    "hosts": 6,
+    "sql_instances": 3,
+    "total_allocated_vcpu": 68,
+    "total_allocated_ram_gb": 248,
+    "spike_events": 29,
+    "recommendation_categories": {
+      "ha_dr_constraint": 1,
+      "insufficient_os_headroom": 2,
+      "likely_rightsizing_candidate": 1,
+      "no_change_recommended": 1,
+      "optimize_recurring_workload_before_rightsizing": 1
+    },
+    "indicative_vcpu_reduction_upper_bound": 4,
+    "indicative_ram_reduction_upper_bound_gb": 6
+  },
+  "hosts": [
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+      "hostname": "web-linux-01",
+      "os": "linux",
+      "os_version": "Ubuntu 22.04",
+      "virtualization": "vm:vmware",
+      "allocated_vcpu": 8,
+      "allocated_ram_gb": 16,
+      "observed_days": 14,
+      "coverage_pct": 98.6,
+      "cpu_pct": {
+        "p50": 12.2,
+        "p95": 18.65,
+        "p99": 19.55,
+        "max": 19.99,
+        "avg": 12.09,
+        "count": 19880
+      },
+      "cpu_peak_pct": {
+        "p50": 17.2,
+        "p95": 23.65,
+        "p99": 24.55,
+        "max": 24.99,
+        "avg": 17.09,
+        "count": 19880
+      },
+      "longest_sustained_cpu_over_70": {
+        "start": "0001-01-01T00:00:00Z",
+        "end": "0001-01-01T00:00:00Z",
+        "minutes": 0,
+        "peak": 0
+      },
+      "minutes_cpu_over_70": 0,
+      "minutes_cpu_over_85": 0,
+      "mem_used_pct": {
+        "p50": 33.49,
+        "p95": 34.84,
+        "p99": 34.97,
+        "max": 35,
+        "avg": 33.49,
+        "count": 19880
+      },
+      "mem_used_p95_gb": 5.6,
+      "paging_evidence": false,
+      "disk_capacity": [
+        {
+          "mount": "/",
+          "total_bytes": 214748364800,
+          "avail_bytes": 128849018880
+        }
+      ],
+      "disk_latency_p95_ms": 3.4,
+      "disk_busy_p95_pct": 14.5,
+      "net_rx_p95_mbs": 3,
+      "net_tx_p95_mbs": 1.5,
+      "spike_count": 0,
+      "recommendation_category": "likely_rightsizing_candidate",
+      "recommendation": "Utilization is consistently far below allocation with no pressure evidence. Strong technical rightsizing candidate — validate with the application owner before resizing.",
+      "suggested_capacity": {
+        "min_vcpu": 3,
+        "max_vcpu": 4,
+        "min_ram_gb": 8,
+        "max_ram_gb": 10,
+        "note": "keeps CPU P95 ≤ 70% and RAM P95 + 30% headroom; validate against month-end/quarterly peaks not observed in the window"
+      },
+      "confidence": 0.66,
+      "validation_required": true,
+      "rationale": [
+        "CPU P95 19% and memory P95 35% of allocation over 14 days",
+        "longest sustained CPU period above 70%: 0 minutes"
+      ]
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "os": "linux",
+      "os_version": "Ubuntu 22.04",
+      "virtualization": "vm:vmware",
+      "allocated_vcpu": 8,
+      "allocated_ram_gb": 32,
+      "observed_days": 14,
+      "coverage_pct": 100,
+      "cpu_pct": {
+        "p50": 14.33,
+        "p95": 20.06,
+        "p99": 91.86,
+        "max": 95.99,
+        "avg": 15.56,
+        "count": 20160
+      },
+      "cpu_peak_pct": {
+        "p50": 19.33,
+        "p95": 25.06,
+        "p99": 96.86,
+        "max": 100,
+        "avg": 20.56,
+        "count": 20160
+      },
+      "longest_sustained_cpu_over_70": {
+        "start": "2026-07-15T02:00:00Z",
+        "end": "2026-07-15T02:26:00Z",
+        "minutes": 27,
+        "peak": 95.21
+      },
+      "minutes_cpu_over_70": 378,
+      "minutes_cpu_over_85": 378,
+      "mem_used_pct": {
+        "p50": 39.5,
+        "p95": 40.84,
+        "p99": 40.97,
+        "max": 41,
+        "avg": 39.5,
+        "count": 20160
+      },
+      "mem_used_p95_gb": 13.1,
+      "paging_evidence": false,
+      "disk_capacity": [
+        {
+          "mount": "/",
+          "total_bytes": 214748364800,
+          "avail_bytes": 128849018880
+        }
+      ],
+      "disk_latency_p95_ms": 3.4,
+      "disk_busy_p95_pct": 14.7,
+      "net_rx_p95_mbs": 3,
+      "net_tx_p95_mbs": 1.5,
+      "spike_count": 14,
+      "repetitive_spikes": [
+        {
+          "resource": "cpu",
+          "time_of_day_utc": "01:59",
+          "occurrences": 14,
+          "distinct_days": 14,
+          "observed_days": 14,
+          "mean_duration_s": 1500,
+          "mean_peak": 95.70500424974777,
+          "cadence": "daily",
+          "event_ids": [
+            "batch-linux-02-20260715T0202",
+            "batch-linux-02-20260716T0200",
+            "batch-linux-02-20260717T0159",
+            "batch-linux-02-20260718T0157",
+            "batch-linux-02-20260719T0200",
+            "batch-linux-02-20260720T0200",
+            "batch-linux-02-20260721T0201",
+            "batch-linux-02-20260722T0157",
+            "batch-linux-02-20260723T0202",
+            "batch-linux-02-20260724T0201",
+            "batch-linux-02-20260725T0159",
+            "batch-linux-02-20260726T0201",
+            "batch-linux-02-20260727T0157",
+            "batch-linux-02-20260728T0159"
+          ],
+          "description": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)"
+        }
+      ],
+      "probable_correlated_processes": [
+        "python3 (etl-nightly.service) ×14"
+      ],
+      "recommendation_category": "optimize_recurring_workload_before_rightsizing",
+      "recommendation": "Baseline utilization is low, but recurring scheduled workloads drive the peaks. Optimize or reschedule those jobs first; rightsizing before that risks extending the job windows.",
+      "confidence": 0.66,
+      "validation_required": true,
+      "rationale": [
+        "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)"
+      ]
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "os": "windows",
+      "os_version": "Microsoft Windows Server 2022 Standard",
+      "virtualization": "vm:vmware",
+      "allocated_vcpu": 16,
+      "allocated_ram_gb": 64,
+      "observed_days": 14,
+      "coverage_pct": 100,
+      "cpu_pct": {
+        "p50": 24.76,
+        "p95": 36.72,
+        "p99": 91.7,
+        "max": 96,
+        "avg": 25.49,
+        "count": 20160
+      },
+      "cpu_peak_pct": {
+        "p50": 29.76,
+        "p95": 41.72,
+        "p99": 96.7,
+        "max": 100,
+        "avg": 30.49,
+        "count": 20160
+      },
+      "longest_sustained_cpu_over_70": {
+        "start": "2026-07-15T02:00:00Z",
+        "end": "2026-07-15T02:26:00Z",
+        "minutes": 27,
+        "peak": 95.52
+      },
+      "minutes_cpu_over_70": 378,
+      "minutes_cpu_over_85": 378,
+      "mem_used_pct": {
+        "p50": 89.5,
+        "p95": 90.85,
+        "p99": 90.97,
+        "max": 91,
+        "avg": 89.5,
+        "count": 20160
+      },
+      "mem_used_p95_gb": 58.1,
+      "paging_evidence": false,
+      "disk_capacity": [
+        {
+          "mount": "/",
+          "total_bytes": 214748364800,
+          "avail_bytes": 128849018880
+        }
+      ],
+      "disk_latency_p95_ms": 3.4,
+      "disk_busy_p95_pct": 14.5,
+      "net_rx_p95_mbs": 3,
+      "net_tx_p95_mbs": 1.5,
+      "spike_count": 14,
+      "repetitive_spikes": [
+        {
+          "resource": "cpu",
+          "time_of_day_utc": "01:59",
+          "occurrences": 14,
+          "distinct_days": 14,
+          "observed_days": 14,
+          "mean_duration_s": 1500,
+          "mean_peak": 95.97180601072402,
+          "cadence": "daily",
+          "event_ids": [
+            "sql-win-01-20260715T0157",
+            "sql-win-01-20260716T0200",
+            "sql-win-01-20260717T0202",
+            "sql-win-01-20260718T0157",
+            "sql-win-01-20260719T0200",
+            "sql-win-01-20260720T0157",
+            "sql-win-01-20260721T0200",
+            "sql-win-01-20260722T0157",
+            "sql-win-01-20260723T0157",
+            "sql-win-01-20260724T0201",
+            "sql-win-01-20260725T0159",
+            "sql-win-01-20260726T0200",
+            "sql-win-01-20260727T0201",
+            "sql-win-01-20260728T0158"
+          ],
+          "description": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)"
+        }
+      ],
+      "probable_correlated_processes": [
+        "sqlservr.exe (MSSQLSERVER) ×14"
+      ],
+      "sql_instances": [
+        "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03|MSSQLSERVER"
+      ],
+      "recommendation_category": "insufficient_os_headroom",
+      "recommendation": "Memory headroom is insufficient; do not reduce resources. Consider investigating consumers or adding RAM.",
+      "confidence": 0.66,
+      "validation_required": true,
+      "rationale": [
+        "memory P95 91% with pressure evidence []"
+      ]
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa04",
+      "hostname": "sqlag-win-02",
+      "os": "windows",
+      "os_version": "Microsoft Windows Server 2022 Standard",
+      "virtualization": "vm:vmware",
+      "allocated_vcpu": 16,
+      "allocated_ram_gb": 64,
+      "observed_days": 14,
+      "coverage_pct": 100,
+      "cpu_pct": {
+        "p50": 46.96,
+        "p95": 64.98,
+        "p99": 66.32,
+        "max": 66.98,
+        "avg": 47.01,
+        "count": 20160
+      },
+      "cpu_peak_pct": {
+        "p50": 51.96,
+        "p95": 69.98,
+        "p99": 71.32,
+        "max": 71.98,
+        "avg": 52.01,
+        "count": 20160
+      },
+      "longest_sustained_cpu_over_70": {
+        "start": "0001-01-01T00:00:00Z",
+        "end": "0001-01-01T00:00:00Z",
+        "minutes": 0,
+        "peak": 0
+      },
+      "minutes_cpu_over_70": 0,
+      "minutes_cpu_over_85": 0,
+      "mem_used_pct": {
+        "p50": 81.5,
+        "p95": 82.86,
+        "p99": 82.97,
+        "max": 83,
+        "avg": 81.5,
+        "count": 20160
+      },
+      "mem_used_p95_gb": 53,
+      "paging_evidence": false,
+      "disk_capacity": [
+        {
+          "mount": "/",
+          "total_bytes": 214748364800,
+          "avail_bytes": 128849018880
+        }
+      ],
+      "disk_latency_p95_ms": 3.4,
+      "disk_busy_p95_pct": 14.5,
+      "net_rx_p95_mbs": 3,
+      "net_tx_p95_mbs": 1.5,
+      "spike_count": 0,
+      "sql_instances": [
+        "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa04|MSSQLSERVER"
+      ],
+      "recommendation_category": "no_change_recommended",
+      "recommendation": "Memory utilization or pressure is high enough that reducing capacity would create risk. No reduction recommended.",
+      "confidence": 0.66,
+      "validation_required": true,
+      "rationale": [
+        "memory P95 83% with pressure evidence []"
+      ]
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa05",
+      "hostname": "sqlag-win-03",
+      "os": "windows",
+      "os_version": "Microsoft Windows Server 2022 Standard",
+      "virtualization": "vm:vmware",
+      "allocated_vcpu": 16,
+      "allocated_ram_gb": 64,
+      "observed_days": 14,
+      "coverage_pct": 100,
+      "cpu_pct": {
+        "p50": 7.99,
+        "p95": 11.9,
+        "p99": 12.62,
+        "max": 12.99,
+        "avg": 8.01,
+        "count": 20160
+      },
+      "cpu_peak_pct": {
+        "p50": 12.99,
+        "p95": 16.9,
+        "p99": 17.62,
+        "max": 17.99,
+        "avg": 13.01,
+        "count": 20160
+      },
+      "longest_sustained_cpu_over_70": {
+        "start": "0001-01-01T00:00:00Z",
+        "end": "0001-01-01T00:00:00Z",
+        "minutes": 0,
+        "peak": 0
+      },
+      "minutes_cpu_over_70": 0,
+      "minutes_cpu_over_85": 0,
+      "mem_used_pct": {
+        "p50": 75.5,
+        "p95": 76.86,
+        "p99": 76.97,
+        "max": 77,
+        "avg": 75.5,
+        "count": 20160
+      },
+      "mem_used_p95_gb": 49.2,
+      "paging_evidence": false,
+      "disk_capacity": [
+        {
+          "mount": "/",
+          "total_bytes": 214748364800,
+          "avail_bytes": 128849018880
+        }
+      ],
+      "disk_latency_p95_ms": 3.4,
+      "disk_busy_p95_pct": 14.5,
+      "net_rx_p95_mbs": 3,
+      "net_tx_p95_mbs": 1.5,
+      "spike_count": 0,
+      "sql_instances": [
+        "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa05|MSSQLSERVER"
+      ],
+      "recommendation_category": "ha_dr_constraint",
+      "recommendation": "This host is an Always On secondary replica. Its low utilization is expected; it must be sized for the primary's workload after failover. Evaluate together with its replica group only.",
+      "confidence": 0.66,
+      "validation_required": true,
+      "rationale": [
+        "local SQL instance reports SECONDARY availability-group role"
+      ]
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa06",
+      "hostname": "mem-linux-03",
+      "os": "linux",
+      "os_version": "Ubuntu 22.04",
+      "virtualization": "vm:vmware",
+      "allocated_vcpu": 4,
+      "allocated_ram_gb": 8,
+      "observed_days": 14,
+      "coverage_pct": 100,
+      "cpu_pct": {
+        "p50": 37.05,
+        "p95": 49.24,
+        "p99": 50.44,
+        "max": 50.99,
+        "avg": 37.01,
+        "count": 20160
+      },
+      "cpu_peak_pct": {
+        "p50": 42.05,
+        "p95": 54.24,
+        "p99": 55.44,
+        "max": 55.99,
+        "avg": 42.01,
+        "count": 20160
+      },
+      "longest_sustained_cpu_over_70": {
+        "start": "0001-01-01T00:00:00Z",
+        "end": "0001-01-01T00:00:00Z",
+        "minutes": 0,
+        "peak": 0
+      },
+      "minutes_cpu_over_70": 0,
+      "minutes_cpu_over_85": 0,
+      "mem_used_pct": {
+        "p50": 94.5,
+        "p95": 95.85,
+        "p99": 95.97,
+        "max": 96,
+        "avg": 94.5,
+        "count": 20160
+      },
+      "mem_used_p95_gb": 7.7,
+      "memory_pressure_evidence": [
+        "memory PSI pressure (some avg 10.0%)",
+        "memory PSI pressure (some avg 10.1%)",
+        "memory PSI pressure (some avg 10.2%)",
+        "memory PSI pressure (some avg 10.3%)",
+        "memory PSI pressure (some avg 10.4%)",
+        "memory PSI pressure (some avg 10.5%)",
+        "memory PSI pressure (some avg 10.6%)",
+        "memory PSI pressure (some avg 10.7%)",
+        "memory PSI pressure (some avg 10.8%)",
+        "memory PSI pressure (some avg 10.9%)",
+        "memory PSI pressure (some avg 11.0%)",
+        "memory PSI pressure (some avg 11.1%)",
+        "memory PSI pressure (some avg 11.2%)",
+        "memory PSI pressure (some avg 11.3%)",
+        "memory PSI pressure (some avg 11.4%)",
+        "memory PSI pressure (some avg 11.5%)",
+        "memory PSI pressure (some avg 11.6%)",
+        "memory PSI pressure (some avg 11.7%)",
+        "memory PSI pressure (some avg 11.8%)",
+        "memory PSI pressure (some avg 11.9%)",
+        "memory PSI pressure (some avg 12.0%)",
+        "memory PSI pressure (some avg 12.1%)",
+        "memory PSI pressure (some avg 12.2%)",
+        "memory PSI pressure (some avg 12.3%)",
+        "memory PSI pressure (some avg 12.4%)",
+        "memory PSI pressure (some avg 12.5%)",
+        "memory PSI pressure (some avg 12.6%)",
+        "memory PSI pressure (some avg 12.7%)",
+        "memory PSI pressure (some avg 12.8%)",
+        "memory PSI pressure (some avg 12.9%)",
+        "memory PSI pressure (some avg 13.0%)",
+        "memory PSI pressure (some avg 13.1%)",
+        "memory PSI pressure (some avg 13.2%)",
+        "memory PSI pressure (some avg 13.3%)",
+        "memory PSI pressure (some avg 13.4%)",
+        "memory PSI pressure (some avg 13.5%)",
+        "memory PSI pressure (some avg 13.6%)",
+        "memory PSI pressure (some avg 13.7%)",
+        "memory PSI pressure (some avg 13.8%)",
+        "memory PSI pressure (some avg 13.9%)",
+        "memory PSI pressure (some avg 14.0%)",
+        "memory PSI pressure (some avg 8.0%)",
+        "memory PSI pressure (some avg 8.1%)",
+        "memory PSI pressure (some avg 8.2%)",
+        "memory PSI pressure (some avg 8.3%)",
+        "memory PSI pressure (some avg 8.4%)",
+        "memory PSI pressure (some avg 8.5%)",
+        "memory PSI pressure (some avg 8.6%)",
+        "memory PSI pressure (some avg 8.7%)",
+        "memory PSI pressure (some avg 8.8%)",
+        "memory PSI pressure (some avg 8.9%)",
+        "memory PSI pressure (some avg 9.0%)",
+        "memory PSI pressure (some avg 9.1%)",
+        "memory PSI pressure (some avg 9.2%)",
+        "memory PSI pressure (some avg 9.3%)",
+        "memory PSI pressure (some avg 9.4%)",
+        "memory PSI pressure (some avg 9.5%)",
+        "memory PSI pressure (some avg 9.6%)",
+        "memory PSI pressure (some avg 9.7%)",
+        "memory PSI pressure (some avg 9.8%)",
+        "memory PSI pressure (some avg 9.9%)",
+        "sustained paging activity observed"
+      ],
+      "paging_evidence": true,
+      "disk_capacity": [
+        {
+          "mount": "/",
+          "total_bytes": 214748364800,
+          "avail_bytes": 128849018880
+        }
+      ],
+      "disk_latency_p95_ms": 3.4,
+      "disk_busy_p95_pct": 14.5,
+      "net_rx_p95_mbs": 3,
+      "net_tx_p95_mbs": 1.5,
+      "spike_count": 1,
+      "probable_correlated_processes": [
+        "java ×1"
+      ],
+      "recommendation_category": "insufficient_os_headroom",
+      "recommendation": "Memory headroom is insufficient; do not reduce resources. Consider investigating consumers or adding RAM.",
+      "confidence": 0.66,
+      "validation_required": true,
+      "rationale": [
+        "memory P95 96% with pressure evidence [memory PSI pressure (some avg 10.0%) memory PSI pressure (some avg 10.1%) memory PSI pressure (some avg 10.2%) memory PSI pressure (some avg 10.3%) memory PSI pressure (some avg 10.4%) memory PSI pressure (some avg 10.5%) memory PSI pressure (some avg 10.6%) memory PSI pressure (some avg 10.7%) memory PSI pressure (some avg 10.8%) memory PSI pressure (some avg 10.9%) memory PSI pressure (some avg 11.0%) memory PSI pressure (some avg 11.1%) memory PSI pressure (some avg 11.2%) memory PSI pressure (some avg 11.3%) memory PSI pressure (some avg 11.4%) memory PSI pressure (some avg 11.5%) memory PSI pressure (some avg 11.6%) memory PSI pressure (some avg 11.7%) memory PSI pressure (some avg 11.8%) memory PSI pressure (some avg 11.9%) memory PSI pressure (some avg 12.0%) memory PSI pressure (some avg 12.1%) memory PSI pressure (some avg 12.2%) memory PSI pressure (some avg 12.3%) memory PSI pressure (some avg 12.4%) memory PSI pressure (some avg 12.5%) memory PSI pressure (some avg 12.6%) memory PSI pressure (some avg 12.7%) memory PSI pressure (some avg 12.8%) memory PSI pressure (some avg 12.9%) memory PSI pressure (some avg 13.0%) memory PSI pressure (some avg 13.1%) memory PSI pressure (some avg 13.2%) memory PSI pressure (some avg 13.3%) memory PSI pressure (some avg 13.4%) memory PSI pressure (some avg 13.5%) memory PSI pressure (some avg 13.6%) memory PSI pressure (some avg 13.7%) memory PSI pressure (some avg 13.8%) memory PSI pressure (some avg 13.9%) memory PSI pressure (some avg 14.0%) memory PSI pressure (some avg 8.0%) memory PSI pressure (some avg 8.1%) memory PSI pressure (some avg 8.2%) memory PSI pressure (some avg 8.3%) memory PSI pressure (some avg 8.4%) memory PSI pressure (some avg 8.5%) memory PSI pressure (some avg 8.6%) memory PSI pressure (some avg 8.7%) memory PSI pressure (some avg 8.8%) memory PSI pressure (some avg 8.9%) memory PSI pressure (some avg 9.0%) memory PSI pressure (some avg 9.1%) memory PSI pressure (some avg 9.2%) memory PSI pressure (some avg 9.3%) memory PSI pressure (some avg 9.4%) memory PSI pressure (some avg 9.5%) memory PSI pressure (some avg 9.6%) memory PSI pressure (some avg 9.7%) memory PSI pressure (some avg 9.8%) memory PSI pressure (some avg 9.9%) sustained paging activity observed]"
+      ]
+    }
+  ],
+  "sql_instances": [
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "instance_key": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03|MSSQLSERVER",
+      "instance_name": "MSSQLSERVER",
+      "version": "15.0.4360.2",
+      "edition": "Standard Edition (64-bit)",
+      "ha_role": "standalone",
+      "collection_level": "deep",
+      "host_ram_gb": 64,
+      "min_server_memory_mb": 0,
+      "max_server_memory_mb": 2147483647,
+      "max_memory_unlimited_default": true,
+      "sql_process_memory_gb": 57,
+      "total_server_memory_gb": 55,
+      "target_server_memory_gb": 56,
+      "sql_memory_pct_of_host": 89.1,
+      "sql_memory_pct_of_configured_max": 0,
+      "memory_outside_memory_manager_gb": 2,
+      "os_memory_headroom_gb": 7,
+      "engine_uptime_days": 76,
+      "ple_p5_seconds": 5220,
+      "memory_grants_pending_max": 0,
+      "batch_requests_p95_ps": 1470.1,
+      "sql_cpu_p95_pct": 53.7,
+      "file_io_read_latency_p95_ms": 5.8,
+      "top_waits": [
+        "CXPACKET (10054s)",
+        "PAGEIOLATCH_SH (4015s)"
+      ],
+      "sql_correlated_spikes": 14,
+      "probable_job_or_request_correlation": [
+        "SQL Agent job: Nightly ETL Load"
+      ],
+      "recommendation_category": "sql_memory_configuration_issue",
+      "recommendation": "max server memory is left at its unlimited default (2147483647 MB). SQL Server will grow toward all host RAM and can pressure the OS. Set an explicit limit (suggested ≈ 57 GB for this 64 GB host) before considering any RAM change.",
+      "suggested_memory": {
+        "min_ram_gb": 57,
+        "max_ram_gb": 57,
+        "note": "host RAM minus max(4 GB, 10%) OS reserve; adjust for other software on the host"
+      },
+      "confidence": 0.66,
+      "validation_required": true,
+      "rationale": [
+        "sys.configurations max server memory (MB) = 2147483647"
+      ]
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa04",
+      "hostname": "sqlag-win-02",
+      "instance_key": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa04|MSSQLSERVER",
+      "instance_name": "MSSQLSERVER",
+      "version": "15.0.4360.2",
+      "edition": "Standard Edition (64-bit)",
+      "ha_role": "PRIMARY",
+      "ha_group": "AG-CORE",
+      "collection_level": "deep",
+      "host_ram_gb": 64,
+      "min_server_memory_mb": 0,
+      "max_server_memory_mb": 51200,
+      "max_memory_unlimited_default": false,
+      "sql_process_memory_gb": 50.5,
+      "total_server_memory_gb": 48.5,
+      "target_server_memory_gb": 49.5,
+      "sql_memory_pct_of_host": 78.9,
+      "sql_memory_pct_of_configured_max": 97,
+      "memory_outside_memory_manager_gb": 2,
+      "os_memory_headroom_gb": 13.5,
+      "engine_uptime_days": 76,
+      "ple_p5_seconds": 5199,
+      "memory_grants_pending_max": 0,
+      "batch_requests_p95_ps": 1469.7,
+      "sql_cpu_p95_pct": 53.8,
+      "file_io_read_latency_p95_ms": 5.8,
+      "top_waits": [
+        "CXPACKET (10074s)",
+        "PAGEIOLATCH_SH (3998s)"
+      ],
+      "sql_correlated_spikes": 0,
+      "recommendation_category": "no_change_recommended",
+      "recommendation": "SQL memory configuration and observed pressure give no safe reduction opportunity.",
+      "confidence": 0.66,
+      "validation_required": true,
+      "rationale": [
+        "Total 48.5 GB / Target 49.5 GB, PLE P5 5199s, SQL CPU P95 54%"
+      ]
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa05",
+      "hostname": "sqlag-win-03",
+      "instance_key": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa05|MSSQLSERVER",
+      "instance_name": "MSSQLSERVER",
+      "version": "15.0.4360.2",
+      "edition": "Standard Edition (64-bit)",
+      "ha_role": "SECONDARY",
+      "ha_group": "AG-CORE",
+      "collection_level": "deep",
+      "host_ram_gb": 64,
+      "min_server_memory_mb": 0,
+      "max_server_memory_mb": 51200,
+      "max_memory_unlimited_default": false,
+      "sql_process_memory_gb": 50.5,
+      "total_server_memory_gb": 48.5,
+      "target_server_memory_gb": 49.5,
+      "sql_memory_pct_of_host": 78.9,
+      "sql_memory_pct_of_configured_max": 97,
+      "memory_outside_memory_manager_gb": 2,
+      "os_memory_headroom_gb": 13.5,
+      "engine_uptime_days": 76,
+      "ple_p5_seconds": 5199,
+      "memory_grants_pending_max": 0,
+      "batch_requests_p95_ps": 4.9,
+      "sql_cpu_p95_pct": 3.9,
+      "file_io_read_latency_p95_ms": 5.8,
+      "top_waits": [
+        "CXPACKET (10074s)",
+        "PAGEIOLATCH_SH (3998s)"
+      ],
+      "sql_correlated_spikes": 0,
+      "recommendation_category": "ha_dr_constraint",
+      "recommendation": "Secondary replica of availability group AG-CORE. Do not size from its own (expectedly idle) workload — it must absorb the primary's load after failover. Assess the replica group together.",
+      "confidence": 0.66,
+      "validation_required": true,
+      "rationale": [
+        "availability-group SECONDARY role detected"
+      ]
+    }
+  ],
+  "ha_groups": [
+    {
+      "ag_name": "AG-CORE",
+      "members": [
+        "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa04|MSSQLSERVER (PRIMARY)",
+        "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa05|MSSQLSERVER (SECONDARY)"
+      ],
+      "replica_server_names": [
+        "sqlag-win-02",
+        "sqlag-win-03"
+      ],
+      "note": "Replicas of one availability group: evaluate sizing together; a secondary must absorb the primary's workload after failover. Topology-level validation required before any resize."
+    }
+  ],
+  "spikes": [
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260715T0157",
+      "start_ts": "2026-07-15T01:57:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 94.26867428367039,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260715T0202",
+      "start_ts": "2026-07-15T02:02:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 94.68871064241632,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260716T0200",
+      "start_ts": "2026-07-16T02:00:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 95.44171167767553,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260716T0200",
+      "start_ts": "2026-07-16T02:00:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 95.45096232260283,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260717T0159",
+      "start_ts": "2026-07-17T01:59:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 96.65867660873695,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa06",
+      "hostname": "mem-linux-03",
+      "event_id": "mem-linux-03-mem-20260717T0200",
+      "start_ts": "2026-07-17T02:00:00Z",
+      "duration_s": 600,
+      "resource": "memory",
+      "baseline": 93,
+      "peak": 98.5,
+      "process": "java",
+      "probable_cause": "probably caused by java (temporal correlation; validate with owner)",
+      "confidence": 0.45,
+      "evidence": [
+        "top process during event: java (5.9 GiB RSS)"
+      ],
+      "proposed_next_validation_step": "Ask the application owner of java whether this burst is expected at this time."
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260717T0202",
+      "start_ts": "2026-07-17T02:02:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 95.95459318583174,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260718T0157",
+      "start_ts": "2026-07-18T01:57:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 96.7590010096638,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260718T0157",
+      "start_ts": "2026-07-18T01:57:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 97.34281039662207,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260719T0200",
+      "start_ts": "2026-07-19T02:00:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 94.36369829273382,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260719T0200",
+      "start_ts": "2026-07-19T02:00:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 96.25540476664925,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260720T0157",
+      "start_ts": "2026-07-20T01:57:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 95.86308763900226,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260720T0200",
+      "start_ts": "2026-07-20T02:00:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 94.21951651116973,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260721T0200",
+      "start_ts": "2026-07-21T02:00:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 95.41299788992423,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260721T0201",
+      "start_ts": "2026-07-21T02:01:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 94.89705943320546,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260722T0157",
+      "start_ts": "2026-07-22T01:57:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 94.63091308997132,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260722T0157",
+      "start_ts": "2026-07-22T01:57:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 96.87930947598127,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260723T0157",
+      "start_ts": "2026-07-23T01:57:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 95.36621083429756,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260723T0202",
+      "start_ts": "2026-07-23T02:02:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 95.52462966077834,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260724T0201",
+      "start_ts": "2026-07-24T02:01:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 95.9342714303679,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260724T0201",
+      "start_ts": "2026-07-24T02:01:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 97.4827011221519,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260725T0159",
+      "start_ts": "2026-07-25T01:59:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 96.93320060436704,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260725T0159",
+      "start_ts": "2026-07-25T01:59:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 96.9291265380984,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260726T0200",
+      "start_ts": "2026-07-26T02:00:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 96.08415549197653,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260726T0201",
+      "start_ts": "2026-07-26T02:01:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 96.35958002659517,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260727T0157",
+      "start_ts": "2026-07-27T01:57:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 94.04145578706095,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260727T0201",
+      "start_ts": "2026-07-27T02:01:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 97.83438740080877,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "hostname": "sql-win-01",
+      "event_id": "sql-win-01-20260728T0158",
+      "start_ts": "2026-07-28T01:58:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 22,
+      "peak": 94.03854313923047,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "sqlservr.exe",
+      "service_or_job": "MSSQLSERVER",
+      "sql_instance": "MSSQLSERVER",
+      "sql_evidence": "SQL Agent job running: Nightly ETL Load",
+      "probable_cause": "probably caused by sqlservr.exe via MSSQLSERVER (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: sqlservr.exe (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: MSSQLSERVER"
+      ],
+      "proposed_next_validation_step": "Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window"
+    },
+    {
+      "host_id": "ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "hostname": "batch-linux-02",
+      "event_id": "batch-linux-02-20260728T0159",
+      "start_ts": "2026-07-28T01:59:00Z",
+      "duration_s": 1500,
+      "resource": "cpu",
+      "baseline": 12,
+      "peak": 97.85995438501513,
+      "recurrence": "cpu spike daily around 01:59 UTC (14 occurrences on 14 of 14 observed days, mean peak 96, mean duration 25m0s)",
+      "process": "python3",
+      "service_or_job": "etl-nightly.service",
+      "probable_cause": "probably caused by python3 via etl-nightly.service (temporal correlation; validate with owner)",
+      "confidence": 0.75,
+      "evidence": [
+        "top process during event: python3 (86% of process CPU core-seconds)",
+        "scheduled job matches event start time: etl-nightly.service"
+      ],
+      "proposed_next_validation_step": "Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly.",
+      "vcpu_reduction_impact": "event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window"
+    }
+  ]
+}
