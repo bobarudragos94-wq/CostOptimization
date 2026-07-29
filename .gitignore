@@ -1,0 +1,5 @@
+bin/
+demo-out/
+*.exe
+.DS_Store
+/dist/
