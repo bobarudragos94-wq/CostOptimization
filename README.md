@@ -68,4 +68,18 @@ scripts/verify-no-network.sh ./bin/ura-agent   # zero-socket proof
 Measured overhead: **0.08 % CPU, ~15 MB RSS** (budget ≤1 % / ≤150 MB) —
 see docs/BENCHMARK.md. Current limitations: docs/LIMITATIONS.md (notably:
 Windows agent is cross-compiled and unit-tested but pending a real Windows
-smoke test, milestone M8 in PLAN.md).
+smoke test, milestone M8b in PLAN.md).
+
+## Windows pilot
+
+The first deployment on a real Windows machine should be the automated
+smoke test — it installs, collects with controlled CPU/memory/disk spikes,
+force-kills and recovers the service, exports, analyzes, verifies zero
+sockets, and uninstalls cleanly, writing evidence to `smoke-evidence\`:
+
+```powershell
+# elevated PowerShell, in the dist/windows release directory
+.\smoke-test.ps1 -Minutes 45
+```
+
+See docs/SMOKE_TEST_WINDOWS.md for what a pass proves — and what it doesn't.

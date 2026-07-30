@@ -1,6 +1,6 @@
 # Infrastructure Utilization & Rightsizing Report
 
-Generated 2026-07-29 23:38 UTC · schema 1.0.0 · analyzer 0.1.0 · fully offline
+Generated 2026-07-30 00:47 UTC · schema 1.0.0 · analyzer 0.1.0 · fully offline
 
 ## Fleet overview
 
@@ -10,11 +10,11 @@ Generated 2026-07-29 23:38 UTC · schema 1.0.0 · analyzer 0.1.0 · fully offlin
 
 Recommendation categories:
 
+- `no_change_recommended`: 1 host(s)
+- `ha_dr_constraint`: 1 host(s)
 - `likely_rightsizing_candidate`: 1 host(s)
 - `optimize_recurring_workload_before_rightsizing`: 1 host(s)
 - `insufficient_os_headroom`: 2 host(s)
-- `no_change_recommended`: 1 host(s)
-- `ha_dr_constraint`: 1 host(s)
 
 Indicative upper bound of reclaimable capacity (only candidates, before validation): **4 vCPU, 6 GB RAM**. This is a technical ceiling, not a commitment.
 
@@ -188,11 +188,11 @@ Rationale:
 | Collection level | deep |
 | Host RAM | 64 GB |
 | min / max server memory | 0 MB / UNLIMITED DEFAULT (2147483647) |
-| SQL process memory | 57.0 GB (89% of host) |
-| Total / Target Server Memory | 55.0 / 56.0 GB |
+| SQL process memory P50/P95/max | 57.0 / 57.0 / 57.0 GB (P95 = 89% of host) |
+| Total Server Memory P50/P95/max | 55.0 / 55.0 / 55.0 GB (Target 56.0 GB) |
 | Memory outside memory manager | 2.0 GB |
-| OS memory headroom | 7.0 GB |
-| Engine uptime | 76.0 days |
+| OS memory headroom (observed avail P5) | 4.6 GB |
+| Engine uptime | 75.0 days |
 | PLE P5 / grants pending max | 5220 s / 0 |
 | Batch req P95 / SQL CPU P95 | 1470/s / 54% |
 | Data-file read latency P95 | 5.8 ms |
@@ -215,11 +215,11 @@ max server memory is left at its unlimited default (2147483647 MB). SQL Server w
 | Collection level | deep |
 | Host RAM | 64 GB |
 | min / max server memory | 0 MB / 51200 MB |
-| SQL process memory | 50.5 GB (79% of host) |
-| Total / Target Server Memory | 48.5 / 49.5 GB |
+| SQL process memory P50/P95/max | 50.5 / 50.5 / 50.5 GB (P95 = 79% of host) |
+| Total Server Memory P50/P95/max | 48.5 / 48.5 / 48.5 GB (Target 49.5 GB) |
 | Memory outside memory manager | 2.0 GB |
-| OS memory headroom | 13.5 GB |
-| Engine uptime | 76.0 days |
+| OS memory headroom (observed avail P5) | 9.7 GB |
+| Engine uptime | 75.0 days |
 | PLE P5 / grants pending max | 5199 s / 0 |
 | Batch req P95 / SQL CPU P95 | 1470/s / 54% |
 | Data-file read latency P95 | 5.8 ms |
@@ -240,11 +240,11 @@ SQL memory configuration and observed pressure give no safe reduction opportunit
 | Collection level | deep |
 | Host RAM | 64 GB |
 | min / max server memory | 0 MB / 51200 MB |
-| SQL process memory | 50.5 GB (79% of host) |
-| Total / Target Server Memory | 48.5 / 49.5 GB |
+| SQL process memory P50/P95/max | 50.5 / 50.5 / 50.5 GB (P95 = 79% of host) |
+| Total Server Memory P50/P95/max | 48.5 / 48.5 / 48.5 GB (Target 49.5 GB) |
 | Memory outside memory manager | 2.0 GB |
-| OS memory headroom | 13.5 GB |
-| Engine uptime | 76.0 days |
+| OS memory headroom (observed avail P5) | 13.5 GB |
+| Engine uptime | 75.0 days |
 | PLE P5 / grants pending max | 5199 s / 0 |
 | Batch req P95 / SQL CPU P95 | 5/s / 4% |
 | Data-file read latency P95 | 5.8 ms |
@@ -259,71 +259,71 @@ Secondary replica of availability group AG-CORE. Do not size from its own (expec
 ## HA replica groups
 
 - **AG-CORE**: ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa04|MSSQLSERVER (PRIMARY); ura-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa05|MSSQLSERVER (SECONDARY)
-  - replica servers: sqlag-win-02, sqlag-win-03
+  - replica servers: sqlag-win-03, sqlag-win-02
   - Replicas of one availability group: evaluate sizing together; a secondary must absorb the primary's workload after failover. Topology-level validation required before any resize.
 
 ## Spike report (29 events)
 
 | Host | Start (UTC) | Res | Dur | Baseline→Peak | Process / job | Recurrence | Conf | Next validation step |
 |---|---|---|---|---|---|---|---|---|
-| sql-win-01 | 07-15 01:57 | cpu | 25m0s | 22→94 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| batch-linux-02 | 07-15 02:02 | cpu | 25m0s | 12→95 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| sql-win-01 | 07-16 02:00 | cpu | 25m0s | 22→95 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| batch-linux-02 | 07-16 02:00 | cpu | 25m0s | 12→95 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| batch-linux-02 | 07-17 01:59 | cpu | 25m0s | 12→97 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| mem-linux-03 | 07-17 02:00 | memory | 10m0s | 93→98 | java |  | 45% | Ask the application owner of java whether this burst is expected at this time. |
-| sql-win-01 | 07-17 02:02 | cpu | 25m0s | 22→96 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| batch-linux-02 | 07-18 01:57 | cpu | 25m0s | 12→97 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| sql-win-01 | 07-18 01:57 | cpu | 25m0s | 22→97 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| batch-linux-02 | 07-19 02:00 | cpu | 25m0s | 12→94 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| sql-win-01 | 07-19 02:00 | cpu | 25m0s | 22→96 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| sql-win-01 | 07-20 01:57 | cpu | 25m0s | 22→96 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| sql-win-01 | 07-16 01:57 | cpu | 25m0s | 22→94 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| batch-linux-02 | 07-16 02:02 | cpu | 25m0s | 12→95 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| sql-win-01 | 07-17 02:00 | cpu | 25m0s | 22→95 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| batch-linux-02 | 07-17 02:00 | cpu | 25m0s | 12→95 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| batch-linux-02 | 07-18 01:59 | cpu | 25m0s | 12→97 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| mem-linux-03 | 07-18 02:00 | memory | 10m0s | 93→98 | java |  | 45% | Ask the application owner of java whether this burst is expected at this time. |
+| sql-win-01 | 07-18 02:02 | cpu | 25m0s | 22→96 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| batch-linux-02 | 07-19 01:57 | cpu | 25m0s | 12→97 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| sql-win-01 | 07-19 01:57 | cpu | 25m0s | 22→97 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
 | batch-linux-02 | 07-20 02:00 | cpu | 25m0s | 12→94 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| sql-win-01 | 07-21 02:00 | cpu | 25m0s | 22→95 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| batch-linux-02 | 07-21 02:01 | cpu | 25m0s | 12→95 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| batch-linux-02 | 07-22 01:57 | cpu | 25m0s | 12→95 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| sql-win-01 | 07-22 01:57 | cpu | 25m0s | 22→97 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| sql-win-01 | 07-23 01:57 | cpu | 25m0s | 22→95 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| batch-linux-02 | 07-23 02:02 | cpu | 25m0s | 12→96 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| sql-win-01 | 07-24 02:01 | cpu | 25m0s | 22→96 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| batch-linux-02 | 07-24 02:01 | cpu | 25m0s | 12→97 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| batch-linux-02 | 07-25 01:59 | cpu | 25m0s | 12→97 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| sql-win-01 | 07-25 01:59 | cpu | 25m0s | 22→97 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| sql-win-01 | 07-26 02:00 | cpu | 25m0s | 22→96 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| batch-linux-02 | 07-26 02:01 | cpu | 25m0s | 12→96 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| batch-linux-02 | 07-27 01:57 | cpu | 25m0s | 12→94 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
-| sql-win-01 | 07-27 02:01 | cpu | 25m0s | 22→98 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| sql-win-01 | 07-28 01:58 | cpu | 25m0s | 22→94 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
-| batch-linux-02 | 07-28 01:59 | cpu | 25m0s | 12→98 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| sql-win-01 | 07-20 02:00 | cpu | 25m0s | 22→96 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| sql-win-01 | 07-21 01:57 | cpu | 25m0s | 22→96 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| batch-linux-02 | 07-21 02:00 | cpu | 25m0s | 12→94 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| sql-win-01 | 07-22 02:00 | cpu | 25m0s | 22→95 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| batch-linux-02 | 07-22 02:01 | cpu | 25m0s | 12→95 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| batch-linux-02 | 07-23 01:57 | cpu | 25m0s | 12→95 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| sql-win-01 | 07-23 01:57 | cpu | 25m0s | 22→97 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| sql-win-01 | 07-24 01:57 | cpu | 25m0s | 22→95 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| batch-linux-02 | 07-24 02:02 | cpu | 25m0s | 12→96 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| sql-win-01 | 07-25 02:01 | cpu | 25m0s | 22→96 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| batch-linux-02 | 07-25 02:01 | cpu | 25m0s | 12→97 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| batch-linux-02 | 07-26 01:59 | cpu | 25m0s | 12→97 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| sql-win-01 | 07-26 01:59 | cpu | 25m0s | 22→97 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| sql-win-01 | 07-27 02:00 | cpu | 25m0s | 22→96 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| batch-linux-02 | 07-27 02:01 | cpu | 25m0s | 12→96 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| batch-linux-02 | 07-28 01:57 | cpu | 25m0s | 12→94 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
+| sql-win-01 | 07-28 02:01 | cpu | 25m0s | 22→98 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| sql-win-01 | 07-29 01:58 | cpu | 25m0s | 22→94 | sqlservr.exe / MSSQLSERVER ⟨SQL Agent job running: Nightly ETL Load⟩ | recurring | 75% | Confirm the SQL Agent job schedule with the DBA and whether its window can move or its plan be tuned. |
+| batch-linux-02 | 07-29 01:59 | cpu | 25m0s | 12→98 | python3 / etl-nightly.service | recurring | 75% | Confirm with the owner of etl-nightly.service that this scheduled run is expected and sized correctly. |
 
-- sql-win-01 `cpu` 07-15 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- batch-linux-02 `cpu` 07-15 02:02: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- sql-win-01 `cpu` 07-16 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- batch-linux-02 `cpu` 07-16 02:00: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- batch-linux-02 `cpu` 07-17 01:59: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- sql-win-01 `cpu` 07-17 02:02: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- batch-linux-02 `cpu` 07-18 01:57: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- sql-win-01 `cpu` 07-18 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- batch-linux-02 `cpu` 07-19 02:00: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- sql-win-01 `cpu` 07-19 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- sql-win-01 `cpu` 07-20 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- sql-win-01 `cpu` 07-16 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- batch-linux-02 `cpu` 07-16 02:02: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- sql-win-01 `cpu` 07-17 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- batch-linux-02 `cpu` 07-17 02:00: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- batch-linux-02 `cpu` 07-18 01:59: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- sql-win-01 `cpu` 07-18 02:02: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- batch-linux-02 `cpu` 07-19 01:57: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- sql-win-01 `cpu` 07-19 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
 - batch-linux-02 `cpu` 07-20 02:00: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- sql-win-01 `cpu` 07-21 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- batch-linux-02 `cpu` 07-21 02:01: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- batch-linux-02 `cpu` 07-22 01:57: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- sql-win-01 `cpu` 07-22 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- sql-win-01 `cpu` 07-20 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- sql-win-01 `cpu` 07-21 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- batch-linux-02 `cpu` 07-21 02:00: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- sql-win-01 `cpu` 07-22 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- batch-linux-02 `cpu` 07-22 02:01: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- batch-linux-02 `cpu` 07-23 01:57: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
 - sql-win-01 `cpu` 07-23 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- batch-linux-02 `cpu` 07-23 02:02: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- sql-win-01 `cpu` 07-24 02:01: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- batch-linux-02 `cpu` 07-24 02:01: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- batch-linux-02 `cpu` 07-25 01:59: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- sql-win-01 `cpu` 07-25 01:59: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- sql-win-01 `cpu` 07-26 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- batch-linux-02 `cpu` 07-26 02:01: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- batch-linux-02 `cpu` 07-27 01:57: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
-- sql-win-01 `cpu` 07-27 02:01: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- sql-win-01 `cpu` 07-28 01:58: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
-- batch-linux-02 `cpu` 07-28 01:59: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- sql-win-01 `cpu` 07-24 01:57: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- batch-linux-02 `cpu` 07-24 02:02: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- sql-win-01 `cpu` 07-25 02:01: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- batch-linux-02 `cpu` 07-25 02:01: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- batch-linux-02 `cpu` 07-26 01:59: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- sql-win-01 `cpu` 07-26 01:59: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- sql-win-01 `cpu` 07-27 02:00: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- batch-linux-02 `cpu` 07-27 02:01: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- batch-linux-02 `cpu` 07-28 01:57: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
+- sql-win-01 `cpu` 07-28 02:01: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- sql-win-01 `cpu` 07-29 01:58: event used ~7.0 cores of 16 for 25m0s; at 8 vCPU this CPU-bound work could take up to ~24m0s — validate the batch window
+- batch-linux-02 `cpu` 07-29 01:59: event used ~7.0 cores of 8 for 25m0s; at 4 vCPU this CPU-bound work could take up to ~49m0s — validate the batch window
 
 ---
 *Recommendations are technical capacity assessments based on the observed window only. Every downsizing action requires application-owner validation; peaks outside the monitoring window (month-end, quarterly, failover) must be considered separately.*

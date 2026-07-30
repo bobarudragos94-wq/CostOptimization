@@ -189,8 +189,7 @@ Pass "analyze" "report produced; spikes verified"
 # ---- 7. clean uninstall ------------------------------------------------------
 if (-not $SkipUninstall) {
     Log "step 7: clean uninstall"
-    # Non-interactive: keep data answer piped as 'y' (delete data).
-    "y" | & .\uninstall.ps1
+    & .\uninstall.ps1 -DeleteData
     if (Get-Service ura-agent -ErrorAction SilentlyContinue) { Fail "uninstall" "service still present" }
     if (Test-Path "C:\Program Files\ura-agent") { Fail "uninstall" "install dir still present" }
     if (Test-Path $DataDir) { Fail "uninstall" "data dir still present" }

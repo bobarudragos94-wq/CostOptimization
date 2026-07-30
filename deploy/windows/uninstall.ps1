@@ -1,6 +1,8 @@
 # Complete, clean removal of the URA agent from a Windows host.
-#   .\uninstall.ps1 [-KeepData]
-param([switch]$KeepData)
+#   .\uninstall.ps1 [-KeepData] [-DeleteData]
+# -DeleteData removes the data directory without the interactive prompt
+# (for automation, e.g. smoke-test.ps1).
+param([switch]$KeepData, [switch]$DeleteData)
 $ErrorActionPreference = "SilentlyContinue"
 
 $InstallDir = "C:\Program Files\ura-agent"
@@ -16,7 +18,7 @@ if (-not $KeepData) {
         & "$InstallDir\ura-agent.exe" export --config "$DataDir\agent.yaml" 2>$null
         Write-Host "    collect bundles from the export directory before continuing"
     }
-    $ans = Read-Host "Delete ALL collected data in $DataDir? [y/N]"
+    $ans = if ($DeleteData) { "y" } else { Read-Host "Delete ALL collected data in $DataDir? [y/N]" }
     if ($ans -eq "y") {
         Remove-Item -Recurse -Force $DataDir
         Write-Host "==> data removed"

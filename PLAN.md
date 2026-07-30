@@ -172,9 +172,30 @@ MSI/DEB/RPM packaging (zip + scripts instead), binary signing (readiness documen
 - [x] M7 synth generator, committed sample bundles + reports (`samples/`),
       full docs set, deploy scripts, SBOM script, measured benchmark
       (0.08 % CPU / ~15 MB RSS vs 1 % / 150 MB budget), no-network PASS
-- [ ] M8 (follow-up agent): run agent on a real Windows Server host; validate service
-      install/uninstall, registry SQL discovery, SCM service mapping, integrated-auth
-      SQL collection against a live instance; wire binary signing; consider MSI/DEB/RPM.
+- [x] M8a (branch `claude/hardening-windows-pilot`): P0 hardening for the first
+      Windows pilot. Fixed: recipient validation (placeholder rejected, key
+      parsed), Windows config template + install gating (service not started
+      until config valid), analyzer safety (health/coverage/permission gating
+      blocks downsizing on degraded data; schema/hostname/host-ID/config-hash
+      consistency checks), SQL correctness (process_only on VIEW SERVER STATE
+      denial, memory P50/P95/max distributions, observed-headroom calculation,
+      max-memory suggestion capped below current limit, FCI as HA constraint,
+      host↔SQL reconciliation), spike attribution (live capture at event open,
+      completed-job correlation, duration-based process history, host-local-tz
+      schedule matching, net rule implemented), reliability (SQL query
+      timeouts + off-loop sampling, counter-reset guards, persisted coverage,
+      orphan cleanup, streaming per-host analysis), security/release (bundle
+      size limits + duplicate detection, Go 1.25.12, govulncheck clean for
+      called code). Windows smoke-test kit: deploy/windows/smoke-test.ps1 +
+      docs/SMOKE_TEST_WINDOWS.md. Linux smoke test executed with real
+      controlled spikes (see docs/PILOT_EVIDENCE_LINUX.md).
+- [ ] M8b (REQUIRED before pilot sign-off — needs a real Windows machine):
+      run deploy/windows/smoke-test.ps1 on the pilot laptop (≥30 min),
+      review smoke-evidence/, validate registry SQL discovery + SCM service
+      mapping + integrated-auth SQL collection against a live instance,
+      wire binary signing; consider MSI/DEB/RPM. NOTHING in M8a substitutes
+      for this — the Windows paths are still cross-compiled and unit-tested
+      only.
 
 ### Notes for the next agent
 
