@@ -167,8 +167,16 @@ func matchSchedule(entries []model.SchedEntry, start time.Time, loc *time.Locati
 	}
 	localStart := start.In(loc)
 	for _, e := range entries {
+		// Entries with unusable names (mangled inline shell like "[") or
+		// schedules that fire more than hourly carry no attribution value.
+		if e.Name == "" || !usableJobName(e.Name) {
+			continue
+		}
 		switch {
 		case e.Schedule != "" && sched.MatchesTime(e.Schedule, localStart, tol):
+			if sched.TooFrequentForCorrelation(e.Schedule) {
+				continue
+			}
 			return e.Source + ":" + e.Name
 		case !e.NextRun.IsZero() && sameTimeOfDay(e.NextRun.In(loc), localStart, tol):
 			return e.Source + ":" + e.Name
@@ -192,6 +200,16 @@ func sameTimeOfDay(a, b time.Time, tol time.Duration) bool {
 		d = 1440 - d
 	}
 	return time.Duration(d)*time.Minute <= tol
+}
+
+// usableJobName rejects names that are clearly shell punctuation or inline
+// script fragments rather than a job identity.
+func usableJobName(name string) bool {
+	if len(name) < 2 {
+		return false
+	}
+	c := name[0]
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '.'
 }
 
 func isSQLProcess(name string) bool {

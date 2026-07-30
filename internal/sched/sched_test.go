@@ -5,6 +5,26 @@ import (
 	"time"
 )
 
+func TestTooFrequentForCorrelation(t *testing.T) {
+	cases := []struct {
+		expr string
+		want bool
+	}{
+		{"*/10 * * * *", true},  // every 10 min: matches everything — worthless
+		{"* * * * *", true},     // every minute
+		{"0,30 * * * *", true},  // twice hourly = 48/day
+		{"0 * * * *", false},    // hourly: exactly the 24/day boundary
+		{"0 2 * * *", false},    // daily
+		{"17 3 * * 0", false},   // weekly
+		{"broken", true},        // unparseable: never use as evidence
+	}
+	for _, c := range cases {
+		if got := TooFrequentForCorrelation(c.expr); got != c.want {
+			t.Errorf("TooFrequentForCorrelation(%q) = %v, want %v", c.expr, got, c.want)
+		}
+	}
+}
+
 func TestCronMatch(t *testing.T) {
 	at := func(h, m int) time.Time {
 		return time.Date(2026, 7, 1, h, m, 0, 0, time.UTC) // a Wednesday

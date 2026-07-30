@@ -78,7 +78,18 @@ Pass "placeholder" "template recipient rejected"
 Log "step 2: keygen + install"
 & .\ura-analyzer.exe keygen --out (Join-Path $Ev "keys") 2>&1 | Add-Content $Log
 $rec = (Get-Content (Join-Path $Ev "keys\recipient.txt") -Raw).Trim()
-# Smoke config: fast sampling, low spike thresholds so controlled load triggers.
+
+# Thresholds derived from THIS machine's baseline, so the controlled load is
+# guaranteed to cross them: memory threshold = current used% + 12, and the
+# allocation (below) is sized to +~25% of RAM. A fixed threshold on an
+# unknown-baseline machine is exactly how a spike gets silently missed.
+$os = Get-CimInstance Win32_OperatingSystem
+$totalGB = [Math]::Round($os.TotalVisibleMemorySize / 1MB, 1)
+$usedPct = [Math]::Round(100 * (1 - $os.FreePhysicalMemory / $os.TotalVisibleMemorySize))
+$memThreshold = [Math]::Min(90, $usedPct + 12)
+$script:AllocGiB = [Math]::Max(2, [Math]::Min(6, [Math]::Floor($totalGB * 0.3)))
+Log "baseline memory ${usedPct}% of ${totalGB} GB -> memory spike threshold ${memThreshold}%, allocation $($script:AllocGiB) GiB"
+
 @"
 agent:
   data_dir: 'C:\ProgramData\ura-agent'
@@ -90,7 +101,7 @@ spikes:
   post_capture: 1m
   rules:
     - { resource: cpu,     static_threshold: 60, sustained: 60s, baseline_k: 0 }
-    - { resource: memory,  static_threshold: 55, sustained: 60s, baseline_k: 0 }
+    - { resource: memory,  static_threshold: $memThreshold, sustained: 60s, baseline_k: 0 }
     - { resource: disk_io, static_threshold: 40, sustained: 60s, baseline_k: 0 }
 sql: { enabled: true, auth: integrated }
 export: { auto_daily: false, export_dir: 'C:\ProgramData\ura-agent\export' }
@@ -114,9 +125,10 @@ $cpuJobs = 1..([Environment]::ProcessorCount) | ForEach-Object {
 Start-Sleep -Seconds 170
 $cpuJobs | Remove-Job -Force -ErrorAction SilentlyContinue
 
-Log "step 3b: memory spike (~4 GiB held 120s)"
-$memJob = Start-Job -ScriptBlock {
-    $chunks = @(); 1..8 | ForEach-Object {
+Log "step 3b: memory spike ($($script:AllocGiB) GiB held 120s)"
+$memJob = Start-Job -ArgumentList ($script:AllocGiB * 2) -ScriptBlock {
+    param($halves)
+    $chunks = @(); 1..$halves | ForEach-Object {
         $b = New-Object byte[] (512MB)
         for ($i = 0; $i -lt $b.Length; $i += 4096) { $b[$i] = 1 }
         $chunks += ,$b }

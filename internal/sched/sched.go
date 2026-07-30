@@ -21,6 +21,36 @@ func Snapshot(issues func(collector, err string)) model.SchedSnapshot {
 	return snap
 }
 
+// TooFrequentForCorrelation reports whether a cron schedule fires so often
+// (more than hourly) that a time match carries no attribution value: a
+// "*/10 * * * *" entry matches EVERY event within any reasonable tolerance
+// and must never count as evidence — doing so inflates confidence on every
+// spike (observed in live smoke testing with Debian's stock php sessionclean
+// cron entry).
+func TooFrequentForCorrelation(cronExpr string) bool {
+	fields := strings.Fields(cronExpr)
+	if len(fields) < 5 {
+		return true
+	}
+	// Count firings across one representative day at minute resolution.
+	day := time.Date(2026, 1, 7, 0, 0, 0, 0, time.UTC) // a Wednesday, day 7
+	fires := 0
+	for m := 0; m < 24*60; m++ {
+		tt := day.Add(time.Duration(m) * time.Minute)
+		if cronFieldMatch(fields[0], tt.Minute(), 0, 59) &&
+			cronFieldMatch(fields[1], tt.Hour(), 0, 23) &&
+			cronFieldMatch(fields[2], tt.Day(), 1, 31) &&
+			cronFieldMatch(fields[3], int(tt.Month()), 1, 12) &&
+			cronFieldMatch(fields[4], int(tt.Weekday()), 0, 6) {
+			fires++
+			if fires > 24 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // MatchesTime reports whether a cron expression fires within ±tolerance of t
 // (minute resolution). Supports the standard 5-field syntax with *, lists,
 // ranges and steps — enough for correlation, not a full cron engine.

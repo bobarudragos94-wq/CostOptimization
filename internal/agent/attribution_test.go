@@ -101,6 +101,37 @@ func TestScheduleMatchUsesHostLocalTimezone(t *testing.T) {
 	}
 }
 
+func TestFrequentAndMangledCronEntriesNeverCorrelate(t *testing.T) {
+	// Regression from live smoke testing: Debian's stock
+	// "*/10 * * * * root [ -x /usr/lib/php/sessionclean ]..." entry parsed to
+	// a job named "[" with a schedule matching every event time — it was
+	// attached as schedule evidence (+0.2 confidence) to an unrelated spike.
+	start := time.Date(2026, 7, 1, 14, 23, 0, 0, time.UTC)
+	ev := &model.SpikeEvent{Resource: model.ResCPU, StartTS: start, EndTS: start.Add(3 * time.Minute)}
+	snaps := []model.ProcTop{snap(start.Add(time.Minute),
+		model.ProcSample{PID: 7, Name: "bash", CPUPct: 95, CPUTimeS: 500, RSSBytes: 10 << 20})}
+	scheds := []model.SchedEntry{
+		{Source: "cron", Name: "[", Schedule: "*/10 * * * *"},          // mangled + frequent
+		{Source: "cron", Name: "sessionclean", Schedule: "*/10 * * * *"}, // clean name, still frequent
+	}
+	attribute(ev, snaps, scheds, 4, nil, time.UTC)
+	if ev.CorrelatedServiceOrJob != "" {
+		t.Fatalf("frequent/mangled cron entries must never correlate: %q", ev.CorrelatedServiceOrJob)
+	}
+	for _, e := range ev.AttributionEvidence {
+		if strings.Contains(e, "scheduled job") {
+			t.Fatalf("no schedule evidence expected: %v", ev.AttributionEvidence)
+		}
+	}
+	// A daily entry at the right time still correlates.
+	ev2 := &model.SpikeEvent{Resource: model.ResCPU, StartTS: start, EndTS: start.Add(3 * time.Minute)}
+	attribute(ev2, snaps, []model.SchedEntry{
+		{Source: "cron", Name: "daily-report", Schedule: "23 14 * * *"}}, 4, nil, time.UTC)
+	if ev2.CorrelatedServiceOrJob != "cron:daily-report" {
+		t.Fatalf("legitimate daily schedule must still correlate: %q", ev2.CorrelatedServiceOrJob)
+	}
+}
+
 func TestMemorySpikeRankedByRSS(t *testing.T) {
 	start := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
 	ev := &model.SpikeEvent{Resource: model.ResMemory, StartTS: start, EndTS: start.Add(5 * time.Minute)}
