@@ -29,6 +29,9 @@ import (
 type persistedState struct {
 	FirstStart    time.Time `json:"first_start"`
 	LastExportDay string    `json:"last_export_day"`
+	// CollectedMinutes survives restarts so exported coverage reflects the
+	// whole monitoring period, not just the current process lifetime.
+	CollectedMinutes int `json:"collected_minutes"`
 }
 
 type Agent struct {
@@ -90,6 +93,15 @@ func New(cfg *config.Config, log *slog.Logger) (*Agent, error) {
 	}
 	a.sqlmgr = newSQLManager(cfg, id, a.health, log)
 	a.loadState()
+	a.collectedMins = a.state.CollectedMinutes
+	// Live SQL evidence: capture active requests/jobs the moment a spike
+	// opens, not minutes later at close. Only immutable fields of ev are read
+	// (EventID, StartTS); the copy runs on its own goroutine so a slow SQL
+	// instance cannot stall the sampling loop.
+	a.detector.OnOpen = func(ev *model.SpikeEvent) {
+		evCopy := &model.SpikeEvent{EventID: ev.EventID, StartTS: ev.StartTS, Resource: ev.Resource}
+		go a.sqlmgr.spikeContextOpen(context.Background(), evCopy)
+	}
 	return a, nil
 }
 
@@ -105,7 +117,7 @@ func (a *Agent) Run(ctx context.Context) error {
 	a.writeInventory()
 	a.lastSched = sched.Snapshot(a.health.Issue)
 	a.store.Append(model.KindSched, a.lastSched)
-	a.sqlmgr.rescan(ctx)
+	go a.sqlmgr.rescan(ctx) // connection attempts must not delay first samples
 
 	hostTick := time.NewTicker(a.cfg.Sampling.HostInterval.Duration)
 	procTick := time.NewTicker(a.cfg.Sampling.ProcInterval.Duration)
@@ -150,8 +162,10 @@ func (a *Agent) Run(ctx context.Context) error {
 			a.sqlmgr.sample(ctx, a.store, a.procs, a.numCPU)
 
 		case <-sqlInvTick.C:
-			a.sqlmgr.rescan(ctx)
-			a.sqlmgr.writeInventories(ctx, a.store)
+			go func() { // never block host sampling on SQL round-trips
+				a.sqlmgr.rescan(ctx)
+				a.sqlmgr.writeInventories(ctx, a.store)
+			}()
 
 		case <-schedTick.C:
 			a.lastSched = sched.Snapshot(a.health.Issue)
@@ -163,6 +177,10 @@ func (a *Agent) Run(ctx context.Context) error {
 		case <-flushTick.C:
 			if err := a.store.Flush(); err != nil {
 				a.health.Issue("store", err.Error())
+			}
+			if a.collectedMins != a.state.CollectedMinutes {
+				a.state.CollectedMinutes = a.collectedMins
+				a.saveState()
 			}
 			a.maybeAutoExport()
 
@@ -208,15 +226,17 @@ func (a *Agent) onHostSample() {
 func (a *Agent) finishSpike(ev *model.SpikeEvent) {
 	window := 2 * time.Minute
 	snaps := a.procs.History(ev.StartTS.Add(-window), ev.EndTS.Add(window))
-	attribute(ev, snaps, a.lastSched.Entries, a.numCPU, a.sqlmgr.pidToInstance())
+	attribute(ev, snaps, a.lastSched.Entries, a.numCPU, a.sqlmgr.pidToInstance(), time.Local)
 	a.append(model.KindSpike, ev)
 	a.log.Info("spike captured", "resource", ev.Resource, "device", ev.Device,
 		"peak", ev.Peak, "duration_s", ev.DurationS, "probable_cause", ev.ProbableCause)
 
-	if ev.SQLCorrelated {
-		if sc := a.sqlmgr.spikeContext(context.Background(), ev); sc != nil {
-			a.append(model.KindSQLSpike, sc)
-		}
+	if ev.SQLCorrelated || a.sqlmgr.hasPending(ev.EventID) {
+		go func() { // SQL round-trips stay off the sampling loop
+			if sc := a.sqlmgr.spikeContextClose(context.Background(), ev); sc != nil {
+				a.append(model.KindSQLSpike, sc)
+			}
+		}()
 	}
 }
 

@@ -16,7 +16,10 @@ import (
 // Structural rule: temporal correlation is never presented as a definite
 // cause. Confidence is capped at 0.9, probable_cause is phrased as probable,
 // and validation_required stays true unless evidence is strong and multi-source.
-func attribute(ev *model.SpikeEvent, snapshots []model.ProcTop, schedEntries []model.SchedEntry, numCPU int, sqlPIDs map[int32]string) {
+// loc is the host's local timezone: cron expressions and scheduled-task times
+// fire in local time (including DST), so matching them against a UTC event
+// start would silently misattribute on any non-UTC host.
+func attribute(ev *model.SpikeEvent, snapshots []model.ProcTop, schedEntries []model.SchedEntry, numCPU int, sqlPIDs map[int32]string, loc *time.Location) {
 	ev.ValidationRequired = true
 	ev.AttributionConfidence = 0
 
@@ -58,8 +61,9 @@ func attribute(ev *model.SpikeEvent, snapshots []model.ProcTop, schedEntries []m
 			"process belongs to service/unit "+top.ServiceUnit)
 	}
 
-	// Scheduled-job timing correlation (±10 min around event start).
-	if job := matchSchedule(schedEntries, ev.StartTS); job != "" {
+	// Scheduled-job timing correlation (±10 min around event start, evaluated
+	// in the host's local timezone).
+	if job := matchSchedule(schedEntries, ev.StartTS, loc); job != "" {
 		if ev.CorrelatedServiceOrJob == "" {
 			ev.CorrelatedServiceOrJob = job
 		}
@@ -153,14 +157,20 @@ func rankProcesses(ev *model.SpikeEvent, snapshots []model.ProcTop, numCPU int) 
 }
 
 // matchSchedule finds a scheduled entry whose firing time matches the event
-// start within ±10 minutes.
-func matchSchedule(entries []model.SchedEntry, start time.Time) string {
+// start within ±10 minutes. Cron expressions are evaluated in the host's
+// local timezone (crond and Task Scheduler fire in local time, DST included);
+// absolute timestamps compare instant-to-instant and are tz-safe already.
+func matchSchedule(entries []model.SchedEntry, start time.Time, loc *time.Location) string {
 	const tol = 10 * time.Minute
+	if loc == nil {
+		loc = time.Local
+	}
+	localStart := start.In(loc)
 	for _, e := range entries {
 		switch {
-		case e.Schedule != "" && sched.MatchesTime(e.Schedule, start, tol):
+		case e.Schedule != "" && sched.MatchesTime(e.Schedule, localStart, tol):
 			return e.Source + ":" + e.Name
-		case !e.NextRun.IsZero() && sameTimeOfDay(e.NextRun, start, tol):
+		case !e.NextRun.IsZero() && sameTimeOfDay(e.NextRun.In(loc), localStart, tol):
 			return e.Source + ":" + e.Name
 		case !e.LastRun.IsZero() && absDur(start.Sub(e.LastRun)) <= tol:
 			return e.Source + ":" + e.Name
@@ -169,9 +179,11 @@ func matchSchedule(entries []model.SchedEntry, start time.Time) string {
 	return ""
 }
 
+// sameTimeOfDay compares wall-clock time-of-day; callers pass both times
+// already converted to the relevant timezone.
 func sameTimeOfDay(a, b time.Time, tol time.Duration) bool {
-	am := a.UTC().Hour()*60 + a.UTC().Minute()
-	bm := b.UTC().Hour()*60 + b.UTC().Minute()
+	am := a.Hour()*60 + a.Minute()
+	bm := b.Hour()*60 + b.Minute()
 	d := am - bm
 	if d < 0 {
 		d = -d

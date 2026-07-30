@@ -28,13 +28,19 @@ type prevProc struct {
 }
 
 type Collector struct {
-	topN    int
-	mapper  ServiceMapper
-	issues  func(collector, err string)
-	mu      sync.Mutex
-	prev    map[int32]prevProc
-	history []model.ProcTop // ring of recent snapshots for spike attribution
-	histCap int
+	topN   int
+	mapper ServiceMapper
+	issues func(collector, err string)
+	mu     sync.Mutex
+	prev   map[int32]prevProc
+	// history holds recent snapshots for spike attribution. It is bounded by
+	// AGE, not count: during an active spike capture snapshots arrive every
+	// 15 s instead of every minute, and a count-based ring would silently
+	// shrink the attribution window exactly when it matters most. A hard
+	// count cap guards memory regardless of snapshot frequency.
+	history     []model.ProcTop
+	histMaxAge  time.Duration
+	histMaxSnap int
 }
 
 func New(topN int, mapper ServiceMapper, issues func(string, string)) *Collector {
@@ -43,7 +49,8 @@ func New(topN int, mapper ServiceMapper, issues func(string, string)) *Collector
 	}
 	return &Collector{
 		topN: topN, mapper: mapper, issues: issues,
-		prev: map[int32]prevProc{}, histCap: 30, // ~30 min of minute snapshots
+		prev:       map[int32]prevProc{},
+		histMaxAge: 30 * time.Minute, histMaxSnap: 240,
 	}
 }
 
@@ -162,8 +169,16 @@ func (c *Collector) Snapshot(numCPU int) model.ProcTop {
 	sort.Slice(top.Procs, func(i, j int) bool { return top.Procs[i].CPUPct > top.Procs[j].CPUPct })
 
 	c.history = append(c.history, top)
-	if len(c.history) > c.histCap {
-		c.history = c.history[len(c.history)-c.histCap:]
+	cutoff := now.Add(-c.histMaxAge)
+	drop := 0
+	for drop < len(c.history) && c.history[drop].TS.Before(cutoff) {
+		drop++
+	}
+	if over := len(c.history) - drop - c.histMaxSnap; over > 0 {
+		drop += over
+	}
+	if drop > 0 {
+		c.history = append(c.history[:0], c.history[drop:]...)
 	}
 	return top
 }

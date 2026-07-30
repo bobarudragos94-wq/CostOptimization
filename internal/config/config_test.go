@@ -3,9 +3,13 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
+
+// testRecipient is a throwaway but structurally valid age public key.
+const testRecipient = "age1atpm63qwfhmtg9l5c4mvu0rv7s7p5hktzz7kydduw5t2vzf6qc2qsa55z9"
 
 func writeCfg(t *testing.T, body string) string {
 	t.Helper()
@@ -18,7 +22,7 @@ func TestLoadDefaultsAndOverride(t *testing.T) {
 	p := writeCfg(t, `
 agent:
   data_dir: /tmp/x
-  recipient: age1abc
+  recipient: age1atpm63qwfhmtg9l5c4mvu0rv7s7p5hktzz7kydduw5t2vzf6qc2qsa55z9
 sampling:
   host_interval: 30s
 `)
@@ -40,9 +44,9 @@ sampling:
 func TestValidationErrors(t *testing.T) {
 	cases := []string{
 		"agent:\n  data_dir: /tmp/x\n", // no recipient
-		"agent:\n  data_dir: /tmp/x\n  recipient: age1abc\nsampling:\n  proc_top_n: 5000\n",
-		"agent:\n  data_dir: /tmp/x\n  recipient: age1abc\nsql:\n  auth: cleartext\n",
-		"agent:\n  data_dir: /tmp/x\n  recipient: age1abc\nspikes:\n  rules:\n    - resource: gpu\n",
+		"agent:\n  data_dir: /tmp/x\n  recipient: age1atpm63qwfhmtg9l5c4mvu0rv7s7p5hktzz7kydduw5t2vzf6qc2qsa55z9\nsampling:\n  proc_top_n: 5000\n",
+		"agent:\n  data_dir: /tmp/x\n  recipient: age1atpm63qwfhmtg9l5c4mvu0rv7s7p5hktzz7kydduw5t2vzf6qc2qsa55z9\nsql:\n  auth: cleartext\n",
+		"agent:\n  data_dir: /tmp/x\n  recipient: age1atpm63qwfhmtg9l5c4mvu0rv7s7p5hktzz7kydduw5t2vzf6qc2qsa55z9\nspikes:\n  rules:\n    - resource: gpu\n",
 	}
 	for i, body := range cases {
 		if _, err := Load(writeCfg(t, body)); err == nil {
@@ -51,14 +55,47 @@ func TestValidationErrors(t *testing.T) {
 	}
 }
 
+func TestRecipientValidation(t *testing.T) {
+	// Placeholder from the example config must be rejected.
+	if _, err := Load(writeCfg(t, "agent:\n  data_dir: /tmp/x\n  recipient: \"age1REPLACE_ME\"\n")); err == nil {
+		t.Fatal("template placeholder recipient must be rejected")
+	} else if !strings.Contains(err.Error(), "placeholder") {
+		t.Fatalf("error should name the placeholder problem: %v", err)
+	}
+	// Structurally invalid keys must be rejected.
+	for _, bad := range []string{"age1abc", "not-a-key", "AGE-SECRET-KEY-1SHOULDNEVERBEHERE"} {
+		if _, err := Load(writeCfg(t, "agent:\n  data_dir: /tmp/x\n  recipient: \""+bad+"\"\n")); err == nil {
+			t.Errorf("invalid recipient %q must be rejected", bad)
+		}
+	}
+	// A valid key with surrounding whitespace is accepted and trimmed.
+	c, err := Load(writeCfg(t, "agent:\n  data_dir: /tmp/x\n  recipient: \"  "+testRecipient+" \"\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Agent.Recipient != testRecipient {
+		t.Fatalf("recipient not trimmed: %q", c.Agent.Recipient)
+	}
+}
+
+func TestQueryTimeoutValidation(t *testing.T) {
+	if _, err := Load(writeCfg(t, "agent:\n  data_dir: /tmp/x\n  recipient: "+testRecipient+"\nsql:\n  query_timeout: 1ms\n")); err == nil {
+		t.Fatal("sub-second query timeout must be rejected")
+	}
+	c, err := Load(writeCfg(t, "agent:\n  data_dir: /tmp/x\n  recipient: "+testRecipient+"\n"))
+	if err != nil || c.SQL.QueryTimeout.Duration != 10*time.Second {
+		t.Fatalf("default query timeout: %v err=%v", c.SQL.QueryTimeout, err)
+	}
+}
+
 func TestHashStableAndSensitive(t *testing.T) {
-	p := writeCfg(t, "agent:\n  data_dir: /tmp/x\n  recipient: age1abc\n")
+	p := writeCfg(t, "agent:\n  data_dir: /tmp/x\n  recipient: age1atpm63qwfhmtg9l5c4mvu0rv7s7p5hktzz7kydduw5t2vzf6qc2qsa55z9\n")
 	c1, _ := Load(p)
 	c2, _ := Load(p)
 	if c1.Hash() != c2.Hash() {
 		t.Fatal("hash must be deterministic")
 	}
-	p3 := writeCfg(t, "agent:\n  data_dir: /tmp/y\n  recipient: age1abc\n")
+	p3 := writeCfg(t, "agent:\n  data_dir: /tmp/y\n  recipient: age1atpm63qwfhmtg9l5c4mvu0rv7s7p5hktzz7kydduw5t2vzf6qc2qsa55z9\n")
 	c3, _ := Load(p3)
 	if c1.Hash() == c3.Hash() {
 		t.Fatal("hash must change with config")

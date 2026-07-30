@@ -252,6 +252,20 @@ type SampleState struct {
 	Counters map[string]int64            // perf counter cumulative values
 	Waits    map[string][2]int64         // wait_type -> {wait_ms, count}
 	FileIO   map[string][4]int64         // db|type -> {reads, writes, stall_r, stall_w}
+	// CoreDenied is set when the core memory telemetry queries
+	// (dm_os_process_memory AND the memory-manager performance counters)
+	// both failed with permission errors: the login lacks VIEW SERVER STATE
+	// and the instance must be treated as process_only.
+	CoreDenied bool
+}
+
+func isPermissionErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "permission") || strings.Contains(s, "denied") ||
+		strings.Contains(s, "view server state")
 }
 
 // CollectSample gathers the periodic light-weight memory/workload sample.
@@ -271,6 +285,7 @@ func CollectSample(ctx context.Context, q Querier, instanceKey string, prev *Sam
 		elapsed = now.Sub(prev.TS).Seconds()
 	}
 
+	pmDenied, pcDenied := false, false
 	if rows, err := q.Query(ctx, "process_memory", qProcessMemory); err == nil && len(rows) > 0 {
 		r := rows[0]
 		s.PhysicalMemoryInUseKB = r.u64("physical_memory_in_use_kb")
@@ -280,6 +295,7 @@ func CollectSample(ctx context.Context, q Querier, instanceKey string, prev *Sam
 		s.ProcessPhysicalMemoryLow = r.boolean("process_physical_memory_low")
 		s.ProcessVirtualMemoryLow = r.boolean("process_virtual_memory_low")
 	} else if err != nil {
+		pmDenied = isPermissionErr(err)
 		issues("process_memory", err.Error())
 	}
 
@@ -325,8 +341,10 @@ func CollectSample(ctx context.Context, q Querier, instanceKey string, prev *Sam
 			s.CheckpointPagesPS = d("Checkpoint pages/sec")
 		}
 	} else {
+		pcDenied = isPermissionErr(err)
 		issues("perf_counters", err.Error())
 	}
+	state.CoreDenied = pmDenied && pcDenied
 
 	if rows, err := q.Query(ctx, "memory_clerks", qMemoryClerks); err == nil {
 		s.MemoryClerksTopKB = map[string]uint64{}
@@ -368,6 +386,9 @@ func CollectSample(ctx context.Context, q Querier, instanceKey string, prev *Sam
 				continue
 			}
 			dr, dw := cur[0]-pv[0], cur[1]-pv[1]
+			if dr < 0 || dw < 0 || cur[2] < pv[2] || cur[3] < pv[3] {
+				continue // counter reset (instance restart): skip this delta
+			}
 			io := model.DBFileIO{Database: r.str("db"), FileType: r.str("file_type"),
 				ReadPS: float64(dr) / elapsed, WritePS: float64(dw) / elapsed}
 			if dr > 0 {
@@ -404,7 +425,9 @@ func CollectSample(ctx context.Context, q Querier, instanceKey string, prev *Sam
 }
 
 // CollectSpikeContext gathers active-request and Agent-job evidence for a
-// host spike correlated with this instance's process.
+// host spike correlated with this instance's process. It is designed to be
+// called while the spike is ACTIVE (the detector's OnOpen hook) — active
+// requests are transient and are usually gone by the time the event closes.
 func CollectSpikeContext(ctx context.Context, q Querier, instanceKey, eventID string, pseudonymize bool, issues Issues) *model.SQLSpikeContext {
 	if issues == nil {
 		issues = func(string, string) {}
@@ -435,30 +458,95 @@ func CollectSpikeContext(ctx context.Context, q Querier, instanceKey, eventID st
 		issues("active_requests", err.Error())
 	}
 
-	if rows, err := q.Query(ctx, "agent_jobs", qAgentJobs); err == nil {
-		for i, r := range rows {
-			name := r.str("name")
-			if pseudonymize {
-				name = fmt.Sprintf("job-%03d", i+1)
-			}
-			run := model.SQLAgentJobRun{JobName: name, StartTime: r.time("start_execution_date")}
-			stop := r.time("stop_execution_date")
-			if stop.IsZero() {
-				run.Running = true
-				run.Outcome = "running"
-			} else {
-				run.Outcome = "completed"
-				run.DurationS = stop.Sub(run.StartTime).Seconds()
-			}
-			sc.AgentJobs = append(sc.AgentJobs, run)
+	sc.AgentJobs = CollectAgentJobs(ctx, q, pseudonymize, issues)
+	for _, j := range sc.AgentJobs {
+		if j.Running {
+			sc.CorrelationLevel = model.CorrAgentJob
 		}
-		for _, j := range sc.AgentJobs {
-			if j.Running {
-				sc.CorrelationLevel = model.CorrAgentJob
-			}
-		}
-	} else {
-		issues("agent_jobs", err.Error())
 	}
 	return sc
+}
+
+// CollectAgentJobs returns recent SQL Agent job activity (running plus jobs
+// stopped within the last hour). Degrades to nil when msdb access is denied.
+func CollectAgentJobs(ctx context.Context, q Querier, pseudonymize bool, issues Issues) []model.SQLAgentJobRun {
+	if issues == nil {
+		issues = func(string, string) {}
+	}
+	rows, err := q.Query(ctx, "agent_jobs", qAgentJobs)
+	if err != nil {
+		issues("agent_jobs", err.Error())
+		return nil
+	}
+	var out []model.SQLAgentJobRun
+	for i, r := range rows {
+		name := r.str("name")
+		if pseudonymize {
+			name = fmt.Sprintf("job-%03d", i+1)
+		}
+		run := model.SQLAgentJobRun{JobName: name, StartTime: r.time("start_execution_date")}
+		stop := r.time("stop_execution_date")
+		if stop.IsZero() {
+			run.Running = true
+			run.Outcome = "running"
+		} else {
+			run.Outcome = "completed"
+			run.DurationS = stop.Sub(run.StartTime).Seconds()
+		}
+		out = append(out, run)
+	}
+	return out
+}
+
+// MergeJobsIntoContext folds a fresh job listing (taken at event close) into
+// a context captured at event open: jobs whose run window overlaps the event
+// window are correlated — including jobs that COMPLETED during the event,
+// which an open-time capture alone would list as still running or miss.
+func MergeJobsIntoContext(sc *model.SQLSpikeContext, jobs []model.SQLAgentJobRun, start, end time.Time) {
+	if sc == nil {
+		return
+	}
+	overlaps := func(j model.SQLAgentJobRun) bool {
+		if j.StartTime.IsZero() || j.StartTime.After(end) {
+			return false
+		}
+		if j.Running {
+			return true // started before event end and still running
+		}
+		stop := j.StartTime.Add(time.Duration(j.DurationS * float64(time.Second)))
+		return !stop.Before(start)
+	}
+	seen := map[string]int{}
+	for i, j := range sc.AgentJobs {
+		seen[j.JobName+"|"+j.StartTime.UTC().Format(time.RFC3339)] = i
+	}
+	for _, j := range jobs {
+		if !overlaps(j) {
+			continue
+		}
+		key := j.JobName + "|" + j.StartTime.UTC().Format(time.RFC3339)
+		if idx, ok := seen[key]; ok {
+			// Same run seen at open: refresh outcome (running -> completed).
+			sc.AgentJobs[idx] = j
+		} else {
+			sc.AgentJobs = append(sc.AgentJobs, j)
+		}
+	}
+	// Recompute correlation: any job overlapping the event window counts,
+	// completed or not; active requests still rank above process-only.
+	hasJob := false
+	for _, j := range sc.AgentJobs {
+		if overlaps(j) {
+			hasJob = true
+			break
+		}
+	}
+	switch {
+	case hasJob:
+		sc.CorrelationLevel = model.CorrAgentJob
+	case len(sc.ActiveRequests) > 0:
+		sc.CorrelationLevel = model.CorrActiveRequest
+	case sc.CorrelationLevel == model.CorrAgentJob:
+		sc.CorrelationLevel = model.CorrProcessOnly
+	}
 }

@@ -169,6 +169,44 @@ func TestBaselineDeviationTrigger(t *testing.T) {
 	}
 }
 
+func TestOnOpenFiresWhileEventActive(t *testing.T) {
+	d := NewDetector(testCfg())
+	var openedAt time.Time
+	var openedID string
+	d.OnOpen = func(ev *model.SpikeEvent) {
+		openedAt = ev.StartTS
+		openedID = ev.EventID
+	}
+	start := time.Date(2026, 7, 1, 2, 0, 0, 0, time.UTC)
+	vals := series(seg(10, 20), seg(20, 95), seg(40, 10))
+	events := run(t, d, Key{Resource: "cpu"}, vals, start)
+	if len(events) != 1 {
+		t.Fatalf("want 1 event, got %d", len(events))
+	}
+	if openedID == "" || openedID != events[0].EventID {
+		t.Fatalf("OnOpen must fire with the event's ID: %q vs %q", openedID, events[0].EventID)
+	}
+	// The open hook must fire well before the event completes (during the
+	// spike), i.e. at the sustained point, not at close+post time.
+	if openedAt.After(events[0].EndTS) {
+		t.Fatalf("OnOpen fired after event end: %v > %v", openedAt, events[0].EndTS)
+	}
+}
+
+func TestNetworkSpikeRule(t *testing.T) {
+	c := testCfg()
+	c.Spikes.Rules = append(c.Spikes.Rules, config.SpikeRule{
+		Resource: "net", StaticThreshold: 85,
+		Sustained: config.Duration{Duration: 1 * time.Minute}, BaselineFloor: 30})
+	d := NewDetector(c)
+	start := time.Date(2026, 7, 1, 2, 0, 0, 0, time.UTC)
+	vals := series(seg(10, 10), seg(10, 96), seg(40, 5)) // NIC utilization %
+	events := run(t, d, Key{Resource: "net", Device: "eth0"}, vals, start)
+	if len(events) != 1 || events[0].Resource != "net" || events[0].Device != "eth0" {
+		t.Fatalf("net rule must trigger per NIC: %+v", events)
+	}
+}
+
 func TestBoundedCapture(t *testing.T) {
 	d := NewDetector(testCfg())
 	start := time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)

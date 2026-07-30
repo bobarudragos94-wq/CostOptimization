@@ -29,10 +29,17 @@ type ConnectOptions struct {
 	Username       string
 	PasswordFile   string // 0600 file, contents read at connect time, never logged
 	ConnectTimeout time.Duration
+	// QueryTimeout bounds every individual query so a stalled instance can
+	// never block the agent (host collection runs on a separate goroutine
+	// regardless — this bounds the SQL goroutine itself).
+	QueryTimeout time.Duration
 }
 
 // dbQuerier is the production Querier over database/sql + go-mssqldb.
-type dbQuerier struct{ db *sql.DB }
+type dbQuerier struct {
+	db           *sql.DB
+	queryTimeout time.Duration
+}
 
 // Connect opens a read-only session to a local instance. The connection is
 // local-only (localhost); the agent never reaches other machines.
@@ -70,7 +77,11 @@ func Connect(o ConnectOptions) (Querier, error) {
 		db.Close()
 		return nil, err
 	}
-	return &dbQuerier{db: db}, nil
+	qt := o.QueryTimeout
+	if qt <= 0 {
+		qt = 10 * time.Second
+	}
+	return &dbQuerier{db: db, queryTimeout: qt}, nil
 }
 
 func readSecretFile(path string) (string, error) {
@@ -85,6 +96,8 @@ func readSecretFile(path string) (string, error) {
 }
 
 func (d *dbQuerier) Query(ctx context.Context, name, sqlText string) ([]Row, error) {
+	ctx, cancel := context.WithTimeout(ctx, d.queryTimeout)
+	defer cancel()
 	rows, err := d.db.QueryContext(ctx, sqlText)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", name, err)

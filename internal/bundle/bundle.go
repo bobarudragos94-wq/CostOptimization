@@ -68,6 +68,19 @@ func Export(in ExportInput) (string, error) {
 	if err := os.MkdirAll(in.OutDir, 0o750); err != nil {
 		return "", err
 	}
+	// Remove crash orphans from previous interrupted exports: stale encrypt
+	// temp dirs and half-written bundles must not accumulate or be mistaken
+	// for complete exports.
+	if orphans, err := filepath.Glob(filepath.Join(in.OutDir, "export-*")); err == nil {
+		for _, o := range orphans {
+			os.RemoveAll(o)
+		}
+	}
+	if orphans, err := filepath.Glob(filepath.Join(in.OutDir, "*.urab.tmp")); err == nil {
+		for _, o := range orphans {
+			os.Remove(o)
+		}
+	}
 
 	var bid [8]byte
 	rand.Read(bid[:])

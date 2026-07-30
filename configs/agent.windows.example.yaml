@@ -1,0 +1,52 @@
+# URA agent configuration — Windows template. Full reference: docs/CONFIGURATION.md
+# SECURITY: this file must contain no secrets. On Windows, SQL access uses the
+# service account (integrated auth) — no credentials are stored anywhere.
+
+agent:
+  data_dir: 'C:\ProgramData\ura-agent'
+  duration_days: 30
+  # PUBLIC age encryption key from 'ura-analyzer keygen' (recipient.txt).
+  # The install is intentionally blocked until this is replaced: the agent
+  # refuses to start while the placeholder is present.
+  recipient: "age1REPLACE_ME"
+  privacy_mode: false
+
+sampling:
+  host_interval: 15s
+  proc_interval: 60s
+  proc_top_n: 10
+  proc_persist_interval: 5m
+  sql_sample_interval: 60s
+  sql_inventory_interval: 6h
+  health_interval: 5m
+  sched_interval: 6h
+
+retention:
+  max_spool_mb: 2048
+  max_age_days: 100
+  keep_after_export: false
+
+spikes:
+  cooldown: 10m
+  pre_buffer: 5m
+  post_capture: 3m
+  rules:
+    - { resource: cpu,          static_threshold: 85, sustained: 2m, baseline_k: 4, baseline_floor: 40 }
+    - { resource: memory,       static_threshold: 90, sustained: 2m, baseline_k: 5, baseline_floor: 60 }
+    - { resource: paging,       static_threshold: 500, sustained: 1m, baseline_k: 6, baseline_floor: 100 }
+    - { resource: disk_latency, static_threshold: 50, sustained: 1m, baseline_k: 5, baseline_floor: 10 }
+    - { resource: disk_queue,   static_threshold: 8,  sustained: 1m, baseline_k: 5, baseline_floor: 2 }
+    - { resource: disk_io,      static_threshold: 95, sustained: 2m, baseline_k: 4, baseline_floor: 50 }
+    - { resource: net,          static_threshold: 85, sustained: 2m, baseline_k: 5, baseline_floor: 30 }
+
+sql:
+  enabled: true
+  # Windows service account authenticates via SSPI — nothing stored.
+  auth: integrated
+  connect_timeout: 5s
+  query_timeout: 10s
+  collect_sql_text: false   # hard-disabled in v1 regardless
+
+export:
+  auto_daily: true
+  export_dir: 'C:\ProgramData\ura-agent\export'

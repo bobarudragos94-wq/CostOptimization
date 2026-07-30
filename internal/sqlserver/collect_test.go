@@ -275,6 +275,87 @@ func TestSpikeContextCorrelationLevels(t *testing.T) {
 	}
 }
 
+func TestMergeJobsCompletedDuringEvent(t *testing.T) {
+	evStart := time.Date(2026, 7, 1, 2, 0, 0, 0, time.UTC)
+	evEnd := evStart.Add(20 * time.Minute)
+
+	// Open-time capture: one job running, no active requests.
+	sc := &model.SQLSpikeContext{
+		EventID: "ev1", CorrelationLevel: model.CorrAgentJob,
+		AgentJobs: []model.SQLAgentJobRun{{
+			JobName: "Nightly ETL", StartTime: evStart.Add(-1 * time.Minute),
+			Running: true, Outcome: "running"}},
+	}
+	// Close-time listing: same run now completed (during the event), plus an
+	// unrelated job that finished hours before the event.
+	closeJobs := []model.SQLAgentJobRun{
+		{JobName: "Nightly ETL", StartTime: evStart.Add(-1 * time.Minute),
+			Outcome: "completed", DurationS: (15 * time.Minute).Seconds()},
+		{JobName: "Old Job", StartTime: evStart.Add(-6 * time.Hour),
+			Outcome: "completed", DurationS: 60},
+	}
+	MergeJobsIntoContext(sc, closeJobs, evStart, evEnd)
+	if len(sc.AgentJobs) != 1 {
+		t.Fatalf("only the overlapping run belongs in the context: %+v", sc.AgentJobs)
+	}
+	j := sc.AgentJobs[0]
+	if j.Running || j.Outcome != "completed" || j.DurationS != 900 {
+		t.Fatalf("open-time running job must be refreshed to its completed outcome: %+v", j)
+	}
+	if sc.CorrelationLevel != model.CorrAgentJob {
+		t.Fatalf("level: %s", sc.CorrelationLevel)
+	}
+
+	// A job that started AND completed inside the event window, discovered
+	// only at close (started after the open capture).
+	sc2 := &model.SQLSpikeContext{EventID: "ev2", CorrelationLevel: model.CorrProcessOnly}
+	MergeJobsIntoContext(sc2, []model.SQLAgentJobRun{{
+		JobName: "Mid-event job", StartTime: evStart.Add(5 * time.Minute),
+		Outcome: "completed", DurationS: 300}}, evStart, evEnd)
+	if len(sc2.AgentJobs) != 1 || sc2.CorrelationLevel != model.CorrAgentJob {
+		t.Fatalf("job completed during event must upgrade correlation: %+v %s", sc2.AgentJobs, sc2.CorrelationLevel)
+	}
+
+	// No overlapping jobs but active requests: stays active_request.
+	sc3 := &model.SQLSpikeContext{EventID: "ev3", CorrelationLevel: model.CorrActiveRequest,
+		ActiveRequests: []model.SQLActiveRequest{{SessionID: 1}}}
+	MergeJobsIntoContext(sc3, nil, evStart, evEnd)
+	if sc3.CorrelationLevel != model.CorrActiveRequest {
+		t.Fatalf("level: %s", sc3.CorrelationLevel)
+	}
+}
+
+func TestCoreDeniedFlagsProcessOnly(t *testing.T) {
+	q := &fakeQuerier{fixtures: baseFixtures(), denied: map[string]bool{
+		"process_memory": true, "perf_counters": true,
+	}}
+	_, st := CollectSample(context.Background(), q, "k", nil, nil)
+	if !st.CoreDenied {
+		t.Fatal("both core queries denied must set CoreDenied")
+	}
+	// One core query denied for a non-permission reason must NOT demote.
+	q2 := &fakeQuerier{fixtures: baseFixtures(), denied: map[string]bool{"process_memory": true}}
+	_, st2 := CollectSample(context.Background(), q2, "k", nil, nil)
+	if st2.CoreDenied {
+		t.Fatal("partial denial must not demote to process_only")
+	}
+}
+
+func TestFileIOCounterResetSkipped(t *testing.T) {
+	q1 := &fakeQuerier{fixtures: baseFixtures()}
+	_, st := CollectSample(context.Background(), q1, "k", nil, nil)
+	st.TS = st.TS.Add(-60 * time.Second)
+	// Instance restarted: cumulative file IO counters went backwards.
+	fx := baseFixtures()
+	fx["file_io"] = []Row{{"db": "SalesDB", "file_type": "data",
+		"reads": int64(100), "writes": int64(10),
+		"stall_read_ms": int64(500), "stall_write_ms": int64(60)}}
+	s2, _ := CollectSample(context.Background(), &fakeQuerier{fixtures: fx}, "k", st, nil)
+	if len(s2.FileIO) != 0 {
+		t.Fatalf("counter reset must not produce negative rates: %+v", s2.FileIO)
+	}
+}
+
 func TestMultiInstanceMemoryMath(t *testing.T) {
 	// Two instances on one 32 GB host, each max=20 GB: combined 40 GB > RAM.
 	mk := func(name string, maxMB int64) *model.SQLInstanceInventory {

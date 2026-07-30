@@ -94,13 +94,25 @@ func Open(dataDir string) (*Store, error) {
 
 // recover moves any leftover active files into closed/, rebuilding sidecar
 // metadata by re-reading every complete record (torn tails are dropped).
+// Crash-orphaned temporary files (.tmp from interrupted sidecar/rename
+// operations) are removed first so they can never shadow real segments.
 func (s *Store) recover() error {
+	for _, dir := range []string{filepath.Join(s.root, activeDir), filepath.Join(s.root, closedDir)} {
+		if tmps, err := filepath.Glob(filepath.Join(dir, "*.tmp")); err == nil {
+			for _, t := range tmps {
+				os.Remove(t)
+			}
+		}
+	}
 	entries, err := os.ReadDir(filepath.Join(s.root, activeDir))
 	if err != nil {
 		return err
 	}
 	for _, e := range entries {
 		if e.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(e.Name(), ".tmp") {
 			continue
 		}
 		src := filepath.Join(s.root, activeDir, e.Name())

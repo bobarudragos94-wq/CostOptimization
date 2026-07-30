@@ -11,8 +11,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
+	"filippo.io/age"
 	"gopkg.in/yaml.v3"
 )
 
@@ -79,6 +81,9 @@ type Config struct {
 		Username       string   `yaml:"username" json:"username"`
 		PasswordFile   string   `yaml:"password_file" json:"password_file"` // 0600 file; contents never logged/exported
 		ConnectTimeout Duration `yaml:"connect_timeout" json:"connect_timeout"`
+		// QueryTimeout bounds every individual DMV query so a stalled SQL
+		// Server can never block collection.
+		QueryTimeout Duration `yaml:"query_timeout" json:"query_timeout"`
 		// CollectSQLText exists for forward compatibility but is hard-disabled
 		// in v1: the collector never selects sql text regardless of its value.
 		CollectSQLText bool `yaml:"collect_sql_text" json:"collect_sql_text"`
@@ -116,10 +121,14 @@ func Default() *Config {
 		{Resource: "disk_latency", StaticThreshold: 50, Sustained: Duration{1 * time.Minute}, BaselineK: 5, BaselineFloor: 10},
 		{Resource: "disk_queue", StaticThreshold: 8, Sustained: Duration{1 * time.Minute}, BaselineK: 5, BaselineFloor: 2},
 		{Resource: "disk_io", StaticThreshold: 95, Sustained: Duration{2 * time.Minute}, BaselineK: 4, BaselineFloor: 50},
+		// net fires on interface utilization percent; it can only trigger for
+		// NICs whose link speed is known (see docs/CONFIGURATION.md).
+		{Resource: "net", StaticThreshold: 85, Sustained: Duration{2 * time.Minute}, BaselineK: 5, BaselineFloor: 30},
 	}
 	c.SQL.Enabled = true
 	c.SQL.Auth = defaultSQLAuth()
 	c.SQL.ConnectTimeout = Duration{5 * time.Second}
+	c.SQL.QueryTimeout = Duration{10 * time.Second}
 	c.Export.AutoDaily = true
 	return c
 }
@@ -150,6 +159,14 @@ func (c *Config) Validate() error {
 	if c.Agent.Recipient == "" {
 		return fmt.Errorf("agent.recipient (age public key) is required; run 'ura-analyzer keygen' on the analyzer machine and copy only the recipient here")
 	}
+	rec := strings.TrimSpace(c.Agent.Recipient)
+	if strings.Contains(rec, "REPLACE_ME") {
+		return fmt.Errorf("agent.recipient is still the template placeholder %q; run 'ura-analyzer keygen' on the analyzer machine and paste the content of recipient.txt", c.Agent.Recipient)
+	}
+	if _, err := age.ParseX25519Recipient(rec); err != nil {
+		return fmt.Errorf("agent.recipient is not a valid age public key (expected age1...): %w", err)
+	}
+	c.Agent.Recipient = rec
 	if c.Sampling.HostInterval.Duration < time.Second {
 		return fmt.Errorf("sampling.host_interval must be >= 1s")
 	}
@@ -161,6 +178,9 @@ func (c *Config) Validate() error {
 	}
 	if c.SQL.Auth != "integrated" && c.SQL.Auth != "sqllogin" {
 		return fmt.Errorf("sql.auth must be integrated or sqllogin")
+	}
+	if c.SQL.QueryTimeout.Duration < time.Second {
+		return fmt.Errorf("sql.query_timeout must be >= 1s")
 	}
 	if c.Export.ExportDir == "" {
 		c.Export.ExportDir = c.Agent.DataDir + "/export"

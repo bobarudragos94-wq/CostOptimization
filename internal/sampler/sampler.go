@@ -156,6 +156,13 @@ func (s *Sampler) Sample() *HighRes {
 				if !ok {
 					continue
 				}
+				// Counter reset (reboot, device re-attach): uint64 deltas
+				// would wrap to huge positives — skip this interval entirely.
+				if cur.ReadCount < prev.ReadCount || cur.WriteCount < prev.WriteCount ||
+					cur.ReadTime < prev.ReadTime || cur.WriteTime < prev.WriteTime ||
+					cur.IoTime < prev.IoTime {
+					continue
+				}
 				dr := DiskRates{
 					ReadIOPS:     rate(cur.ReadCount, prev.ReadCount, elapsed),
 					WriteIOPS:    rate(cur.WriteCount, prev.WriteCount, elapsed),
@@ -236,6 +243,15 @@ func (hr *HighRes) SpikePoint() spike.Point {
 		vals[spike.Key{Resource: model.ResDiskLatency, Device: dev}] = lat
 		vals[spike.Key{Resource: model.ResDiskQueue, Device: dev}] = d.QueueDepth
 		vals[spike.Key{Resource: model.ResDiskIO, Device: dev}] = d.BusyPct
+	}
+	// Network: utilization percent per NIC. Only NICs with a known link speed
+	// can feed the net spike rule — without capacity, a percent threshold is
+	// meaningless (documented in docs/CONFIGURATION.md).
+	for name, n := range hr.Net {
+		if n.SpeedMbps > 0 {
+			util := clampPct((n.RxBytesPS + n.TxBytesPS) * 8 / 1e6 / float64(n.SpeedMbps) * 100)
+			vals[spike.Key{Resource: model.ResNet, Device: name}] = util
+		}
 	}
 	return spike.Point{TS: hr.TS, Values: vals}
 }

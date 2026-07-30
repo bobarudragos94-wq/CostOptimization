@@ -94,6 +94,11 @@ type Detector struct {
 	// OpenEvents lets the agent know a capture is in progress (to snapshot
 	// processes at higher frequency).
 	openCount int
+	// OnOpen, when set, fires the moment an event opens (sustained threshold
+	// reached) — while the spike is still in progress. The agent uses it to
+	// capture SQL active-request/job context live instead of minutes later
+	// at event close, when the requests are typically gone.
+	OnOpen func(ev *model.SpikeEvent)
 }
 
 func NewDetector(cfg *config.Config) *Detector {
@@ -234,6 +239,9 @@ func (d *Detector) step(st *seriesState, ts time.Time, val float64) *model.Spike
 	st.open = &openEvent{ev: ev}
 	d.openCount++
 	st.belowSince = time.Time{}
+	if d.OnOpen != nil {
+		d.OnOpen(ev)
+	}
 	return nil
 }
 
