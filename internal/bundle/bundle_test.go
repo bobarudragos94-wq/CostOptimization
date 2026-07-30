@@ -157,6 +157,61 @@ func TestTruncatedBundle(t *testing.T) {
 	}
 }
 
+func TestReadManifestOnly(t *testing.T) {
+	idStr, recip, _ := crypt.GenerateIdentity()
+	keyFile := t.TempDir() + "/key.txt"
+	os.WriteFile(keyFile, []byte(idStr+"\n"), 0o600)
+	ids, _ := crypt.LoadIdentities(keyFile)
+
+	path, _ := makeBundle(t, recip)
+	mf, err := ReadManifestOnly(path, ids)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mf.HostID != "ura-test" || mf.BundleID == "" || len(mf.Segments) == 0 {
+		t.Fatalf("manifest incomplete: %+v", mf)
+	}
+	// Wrong key must fail cleanly.
+	otherID, _, _ := crypt.GenerateIdentity()
+	os.WriteFile(keyFile, []byte(otherID+"\n"), 0o600)
+	wrong, _ := crypt.LoadIdentities(keyFile)
+	if _, err := ReadManifestOnly(path, wrong); err == nil {
+		t.Fatal("wrong key must fail manifest read")
+	}
+}
+
+func TestOversizedBundleRejected(t *testing.T) {
+	// A sparse file over the limit must be rejected before reading.
+	p := t.TempDir() + "/huge.urab"
+	f, err := os.Create(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Truncate(MaxBundleBytes + 1); err != nil {
+		f.Close()
+		t.Skip("filesystem does not support sparse truncate")
+	}
+	f.Close()
+	res := Import(p, nil)
+	if res.Fatal == "" || !contains(res.Fatal, "size limit") {
+		t.Fatalf("oversized bundle must be rejected: %+v", res.Fatal)
+	}
+	if _, err := ReadManifestOnly(p, nil); err == nil {
+		t.Fatal("manifest read must also honor the size limit")
+	}
+}
+
+func contains(s, sub string) bool {
+	return len(s) >= len(sub) && (func() bool {
+		for i := 0; i+len(sub) <= len(s); i++ {
+			if s[i:i+len(sub)] == sub {
+				return true
+			}
+		}
+		return false
+	})()
+}
+
 func TestExportRemovesSpoolWhenAsked(t *testing.T) {
 	_, recip, _ := crypt.GenerateIdentity()
 	dir := t.TempDir()

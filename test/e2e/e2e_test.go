@@ -117,6 +117,40 @@ func TestTamperedBundleMarked(t *testing.T) {
 	}
 }
 
+func TestDuplicateBundleSkipped(t *testing.T) {
+	dir := t.TempDir()
+	id, rec, _ := crypt.GenerateIdentity()
+	keyFile := filepath.Join(dir, "identity.txt")
+	os.WriteFile(keyFile, []byte(id+"\n"), 0o600)
+	bundles := filepath.Join(dir, "bundles")
+	paths, err := synth.GenerateFleet(rec, bundles, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A byte-identical copy of one bundle under a new name (double-collected
+	// from a server) must be skipped, not double-counted.
+	orig, _ := os.ReadFile(paths[0])
+	os.WriteFile(filepath.Join(bundles, "copy-of-first.urab"), orig, 0o640)
+
+	ids, _ := crypt.LoadIdentities(keyFile)
+	res, err := analyzer.Run(bundles, ids, filepath.Join(dir, "reports"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Hosts != 6 {
+		t.Fatalf("duplicate must not create hosts or double data: %d hosts", res.Hosts)
+	}
+	dup := false
+	for _, w := range res.Warnings {
+		if strings.Contains(w, "duplicate") {
+			dup = true
+		}
+	}
+	if !dup {
+		t.Fatalf("duplicate bundle must be reported: %v", res.Warnings)
+	}
+}
+
 func TestSchemaCompatibilityGolden(t *testing.T) {
 	// A bundle produced by the current code must import with the current
 	// schema version stamped on every record; this guards the golden format.

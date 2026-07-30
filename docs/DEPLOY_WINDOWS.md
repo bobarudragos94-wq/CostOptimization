@@ -9,16 +9,22 @@ prerequisites.
 
 ## Install
 
-1. Unpack the release on the server: `ura-agent.exe`, `agent.example.yaml`,
-   `install.ps1`, `uninstall.ps1`.
+1. Unpack the release on the server: `ura-agent.exe`,
+   `agent.windows.example.yaml`, `install.ps1`, `uninstall.ps1`,
+   `smoke-test.ps1`.
 2. Elevated PowerShell: `.\install.ps1`
    * installs to `C:\Program Files\ura-agent`, data in `C:\ProgramData\ura-agent`
      with restricted ACLs (Administrators/SYSTEM/service account only);
    * registers the `ura-agent` service (auto start, restart on failure) under
-     the virtual account `NT SERVICE\ura-agent` (least privilege, no password).
+     the virtual account `NT SERVICE\ura-agent` (least privilege, no password);
+   * **does not start the service until the configuration validates** — with
+     the template's placeholder recipient still in place, the script exits
+     with remediation steps and the service stays stopped.
 3. Edit `C:\ProgramData\ura-agent\agent.yaml`: set `agent.recipient` from
-   `ura-analyzer keygen` (docs/KEY_MANAGEMENT.md). On Windows `sql.auth`
-   defaults to `integrated` — no credentials stored anywhere.
+   `ura-analyzer keygen` (docs/KEY_MANAGEMENT.md), then `Start-Service
+   ura-agent` (or re-run `install.ps1`). The recipient is parsed as a real
+   age key; `age1REPLACE_ME` and malformed keys are rejected. On Windows
+   `sql.auth` defaults to `integrated` — no credentials stored anywhere.
 4. For deep SQL telemetry, run `deploy\sql\setup-least-privilege.sql` on each
    instance with `CREATE LOGIN [NT SERVICE\ura-agent] FROM WINDOWS;`
    uncommented.

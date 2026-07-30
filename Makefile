@@ -36,7 +36,7 @@ sbom:
 dist: all sbom
 	rm -rf $(DIST) && mkdir -p $(DIST)/linux $(DIST)/windows $(DIST)/analyzer
 	cp bin/ura-agent deploy/linux/* configs/agent.example.yaml $(DIST)/linux/
-	cp bin/ura-agent.exe deploy/windows/* configs/agent.example.yaml $(DIST)/windows/
+	cp bin/ura-agent.exe bin/ura-analyzer.exe deploy/windows/* configs/agent.example.yaml configs/agent.windows.example.yaml $(DIST)/windows/
 	cp bin/ura-analyzer bin/ura-analyzer.exe $(DIST)/analyzer/
 	cp -r docs deploy/sql $(DIST)/
 	cp sbom.json $(DIST)/

@@ -40,10 +40,19 @@ contain secrets** — SQL passwords live in the separate `sql.password_file`.
 
 `cooldown` (10m), `pre_buffer` (5m), `post_capture` (3m), and per-resource
 `rules`: `resource` (`cpu|memory|paging|disk_latency|disk_queue|disk_io|net`),
-`static_threshold` (units: % for cpu/memory/disk_io, ms for disk_latency,
+`static_threshold` (units: % for cpu/memory/disk_io/net, ms for disk_latency,
 requests for disk_queue, events/s for paging), `sustained` (duration the
 threshold must hold), `baseline_k` (MAD multiplier for baseline deviation;
 0 disables), `baseline_floor` (baseline trigger never drops below this).
+
+The `net` rule fires on **interface utilization percent** and therefore only
+evaluates NICs whose link speed is known (sysfs on Linux; unknown on Windows
+in v1 — the rule is inert there and this is surfaced in the report rather
+than silently ignored).
+
+Scheduled-job correlation (cron / Task Scheduler times) is evaluated in the
+**host's local timezone** including DST, since that is when those schedulers
+actually fire; all stored timestamps remain UTC.
 
 ## sql
 
@@ -53,6 +62,7 @@ threshold must hold), `baseline_k` (MAD multiplier for baseline deviation;
 | `auth` | `integrated` (Win) / `sqllogin` (Linux) | |
 | `username` / `password_file` | — | sqllogin mode only; file must be 0600 |
 | `connect_timeout` | 5s | |
+| `query_timeout` | 10s | hard bound on every individual DMV query (≥1s). SQL work additionally runs on its own goroutine, so a stalled instance can never block host collection — worst case is a skipped SQL round plus a health entry |
 | `collect_sql_text` | false | **hard-disabled in v1** — the collector never selects SQL text regardless of this value |
 
 ## export

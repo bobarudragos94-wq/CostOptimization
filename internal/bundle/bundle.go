@@ -38,6 +38,15 @@ import (
 
 const manifestName = "manifest.json.age"
 
+// Import hard limits: a bundle is a bounded artifact produced by our own
+// agent; anything beyond these sizes is malformed or hostile input and is
+// rejected before memory is committed to it.
+const (
+	MaxBundleBytes  = 2 << 30  // whole .urab file
+	MaxEntryBytes   = 512 << 20 // any single tar entry (largest real segment ≈ 32 MB)
+	MaxBundleEntries = 10000
+)
+
 // ExportInput carries everything needed to build a bundle.
 type ExportInput struct {
 	Store      *store.Store
@@ -270,9 +279,14 @@ func (r *ImportResult) Ok() bool {
 }
 
 // Import reads one .urab file, decrypts and validates it. Damaged segments
-// are reported individually and never abort the whole bundle.
+// are reported individually and never abort the whole bundle. Oversized or
+// over-long inputs are rejected outright (see Max* limits).
 func Import(path string, identities []age.Identity) *ImportResult {
 	res := &ImportResult{Path: path}
+	if st, err := os.Stat(path); err == nil && st.Size() > MaxBundleBytes {
+		res.Fatal = fmt.Sprintf("bundle exceeds size limit (%d > %d bytes); refusing to import", st.Size(), int64(MaxBundleBytes))
+		return res
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		res.Fatal = fmt.Sprintf("open: %v", err)
@@ -280,10 +294,12 @@ func Import(path string, identities []age.Identity) *ImportResult {
 	}
 	defer f.Close()
 
-	// Pass 1: read every entry into memory-mapped temp map (bundle files are
-	// modest: minute aggregates for 90 days compress to tens of MB).
+	// Pass 1: read entries into memory (bundle files are modest: minute
+	// aggregates for 90 days compress to tens of MB), enforcing per-entry
+	// and entry-count limits.
 	files := map[string][]byte{}
 	tr := tar.NewReader(f)
+	entries := 0
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -294,11 +310,19 @@ func Import(path string, identities []age.Identity) *ImportResult {
 			// keep whatever entries were read before the corruption
 			break
 		}
+		entries++
+		if entries > MaxBundleEntries {
+			res.Fatal = fmt.Sprintf("bundle has more than %d entries; refusing to import", MaxBundleEntries)
+			break
+		}
 		name := filepath.ToSlash(filepath.Clean(hdr.Name))
 		if strings.Contains(name, "..") {
 			continue // path traversal defense
 		}
-		b, err := io.ReadAll(io.LimitReader(tr, 1<<30))
+		if hdr.Size > MaxEntryBytes {
+			continue // oversized entry: skipped, surfaces as missing segment
+		}
+		b, err := io.ReadAll(io.LimitReader(tr, MaxEntryBytes))
 		if err != nil {
 			continue
 		}
@@ -364,4 +388,52 @@ func decryptBytes(ct []byte, identities []age.Identity) ([]byte, error) {
 		return nil, err
 	}
 	return io.ReadAll(r)
+}
+
+// ReadManifestOnly streams the tar just far enough to decrypt the manifest,
+// without buffering any segment. This lets the analyzer group and validate a
+// large bundle directory before committing memory to any host's data.
+func ReadManifestOnly(path string, identities []age.Identity) (*model.Manifest, error) {
+	st, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	if st.Size() > MaxBundleBytes {
+		return nil, fmt.Errorf("bundle exceeds size limit (%d bytes)", st.Size())
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	tr := tar.NewReader(f)
+	for entries := 0; entries < MaxBundleEntries; entries++ {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read tar: %w", err)
+		}
+		if filepath.ToSlash(filepath.Clean(hdr.Name)) != manifestName {
+			continue // manifest is written first; tolerate reordering anyway
+		}
+		if hdr.Size > MaxEntryBytes {
+			return nil, fmt.Errorf("manifest entry oversized")
+		}
+		ct, err := io.ReadAll(io.LimitReader(tr, MaxEntryBytes))
+		if err != nil {
+			return nil, err
+		}
+		plain, err := decryptBytes(ct, identities)
+		if err != nil {
+			return nil, fmt.Errorf("manifest decrypt failed (wrong key or tampered): %w", err)
+		}
+		var m model.Manifest
+		if err := json.Unmarshal(plain, &m); err != nil {
+			return nil, fmt.Errorf("manifest parse: %w", err)
+		}
+		return &m, nil
+	}
+	return nil, fmt.Errorf("manifest missing")
 }

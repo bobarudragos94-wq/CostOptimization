@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/bobarudragos94-wq/costoptimization/internal/analyzer/stats"
@@ -55,6 +56,9 @@ type HostReport struct {
 	ObservedDays     int     `json:"observed_days"`
 	CoveragePct      float64 `json:"coverage_pct"`
 	DataProblems     []string `json:"data_problems,omitempty"`
+	DegradedCollectors map[string]string `json:"degraded_collectors,omitempty"`
+	PermissionIssues   []string          `json:"permission_issues,omitempty"`
+	DroppedSamples     uint64            `json:"dropped_samples,omitempty"`
 
 	CPU          stats.Summary `json:"cpu_pct"`      // avg-of-minute
 	CPUPeak      stats.Summary `json:"cpu_peak_pct"` // max-of-minute
@@ -65,6 +69,9 @@ type HostReport struct {
 
 	Mem            stats.Summary `json:"mem_used_pct"`
 	MemUsedP95GB   float64       `json:"mem_used_p95_gb"`
+	// MemAvailP5GB is the 5th percentile of observed available memory: the
+	// real OS headroom including every consumer, used by the SQL reports.
+	MemAvailP5GB   float64       `json:"mem_avail_p5_gb"`
 	MemPressure    []string      `json:"memory_pressure_evidence,omitempty"`
 	PagingEvidence bool          `json:"paging_evidence"`
 
@@ -105,7 +112,11 @@ type SQLReport struct {
 	MinServerMemMB   uint64  `json:"min_server_memory_mb"`
 	MaxServerMemMB   uint64  `json:"max_server_memory_mb"`
 	MaxIsUnlimited   bool    `json:"max_memory_unlimited_default"`
-	SQLProcessMemGB  float64 `json:"sql_process_memory_gb"`  // physical_memory_in_use, latest
+	SQLProcessMemGB  float64 `json:"sql_process_memory_gb"` // physical_memory_in_use, latest
+	// Distributions over the whole window, not just the last sample: a
+	// single snapshot hides growth, restarts and cache churn.
+	SQLProcessMem  stats.Summary `json:"sql_process_memory_gb_dist"`
+	TotalServerMem stats.Summary `json:"total_server_memory_gb_dist"`
 	TotalServerMemGB float64 `json:"total_server_memory_gb"` // latest
 	TargetServerMemGB float64 `json:"target_server_memory_gb"`
 	SQLMemPctOfHost  float64 `json:"sql_memory_pct_of_host"`
@@ -186,9 +197,21 @@ func analyzeHost(h *HostData) HostReport {
 	r.ObservedDays = int(span.Hours()/24) + 1
 	expected := span.Minutes() + 1
 	r.CoveragePct = round1(math.Min(100, float64(len(h.Minutes))/expected*100))
+	// The agent's own persisted coverage counters see gaps the imported span
+	// cannot (e.g. the agent was down for days between exports). Take the
+	// more pessimistic of the two.
+	if h.ManifestExpectedMin > 0 {
+		mc := round1(math.Min(100, float64(h.ManifestCollectedMin)/float64(h.ManifestExpectedMin)*100))
+		if mc < r.CoveragePct {
+			r.CoveragePct = mc
+		}
+	}
+	r.DegradedCollectors = h.DegradedCollectors
+	r.PermissionIssues = h.PermissionIssues
+	r.DroppedSamples = h.DroppedSamples
 
 	var cpuAvg, cpuMax, memPct, steal []float64
-	var memUsedBytes []float64
+	var memUsedBytes, memAvailBytes []float64
 	var latencies, busies, rx, tx []float64
 	var cpuTimed []stats.TimedValue
 	pressure := map[string]bool{}
@@ -199,6 +222,7 @@ func analyzeHost(h *HostData) HostReport {
 		steal = append(steal, m.CPU.StealPct)
 		memPct = append(memPct, m.Mem.UsedPctAvg)
 		memUsedBytes = append(memUsedBytes, float64(m.Mem.UsedBytesAvg))
+		memAvailBytes = append(memAvailBytes, float64(m.Mem.AvailBytesMin))
 		cpuTimed = append(cpuTimed, stats.TimedValue{TS: m.TS, V: m.CPU.AvgPct})
 		for _, d := range m.Disks {
 			latencies = append(latencies, math.Max(d.ReadLatMS, d.WriteLatMS))
@@ -226,6 +250,10 @@ func analyzeHost(h *HostData) HostReport {
 	r.CPUSteal = stats.Summarize(steal).P95
 	r.Mem = stats.Summarize(memPct)
 	r.MemUsedP95GB = round1(stats.Summarize(memUsedBytes).P95 / (1 << 30))
+	if len(memAvailBytes) > 0 {
+		sort.Float64s(memAvailBytes)
+		r.MemAvailP5GB = round1(stats.Quantile(memAvailBytes, 0.05) / (1 << 30))
+	}
 	r.SustainedCPU, r.MinutesOver70 = stats.Sustained(cpuTimed, cpuTargetPeakPct, 3*time.Minute)
 	_, r.MinutesOver85 = stats.Sustained(cpuTimed, cpuSustainedLimit, 3*time.Minute)
 	r.DiskLatencyP95MS = round1(stats.Summarize(latencies).P95)
@@ -295,6 +323,12 @@ func classifyHost(r *HostReport, h *HostData) {
 		r.Rationale = append(r.Rationale,
 			fmt.Sprintf("%d observed days — month-end and weekly batch cycles not yet observed", r.ObservedDays))
 
+	case r.CoveragePct < 70:
+		r.Category = CatMonitorLonger
+		r.Recommendation = "Collection coverage is too low for a confident assessment — the gaps may hide exactly the peaks that matter. Investigate the agent downtime and keep monitoring."
+		r.Rationale = append(r.Rationale,
+			fmt.Sprintf("only %.0f%% of the monitoring window was actually collected", r.CoveragePct))
+
 	case haRole == "SECONDARY":
 		r.Category = CatHADRConstraint
 		r.Recommendation = "This host is an Always On secondary replica. Its low utilization is expected; it must be sized for the primary's workload after failover. Evaluate together with its replica group only."
@@ -358,6 +392,45 @@ func classifyHost(r *HostReport, h *HostData) {
 			r.Category = CatPossibleRightsizing
 		}
 	}
+
+	// Collection-health gate (applied LAST so it overrides everything):
+	// downsizing may only ever be recommended from trustworthy data. If a
+	// CPU/memory collector was degraded, or a meaningful share of samples
+	// was dropped, the numbers understate real utilization — the honest
+	// answer is insufficient_data, not a candidate.
+	if r.Category == CatLikelyRightsizing || r.Category == CatPossibleRightsizing {
+		if bad := criticalDegradations(r); len(bad) > 0 {
+			r.Category = CatInsufficientData
+			r.Suggested = nil
+			r.Confidence = math.Min(r.Confidence, 0.2)
+			r.Recommendation = "Utilization appears low, but host telemetry collection was degraded during the window — the data cannot support a downsizing recommendation. Fix collection (see rationale) and monitor again."
+			r.Rationale = append(r.Rationale, bad...)
+		}
+	}
+}
+
+// criticalDegradations lists collection problems that invalidate CPU/memory
+// conclusions. Process-attribution degradations (proc.io etc.) do not
+// invalidate utilization percentiles and are excluded.
+func criticalDegradations(r *HostReport) []string {
+	var out []string
+	for coll, status := range r.DegradedCollectors {
+		switch {
+		case coll == "host" || strings.HasPrefix(coll, "cpu"),
+			strings.HasPrefix(coll, "mem"), coll == "vmstat", coll == "disk.io":
+			out = append(out, fmt.Sprintf("collector %s was %s during the window", coll, status))
+		}
+	}
+	total := float64(r.DroppedSamples)
+	if total > 0 && r.ObservedDays > 0 {
+		// Expected high-res samples ≈ minutes × 4 (15 s cadence).
+		expected := float64(r.ObservedDays) * 24 * 60 * 4
+		if total/expected > 0.05 {
+			out = append(out, fmt.Sprintf("%d samples (>5%%) were dropped under disk pressure — utilization percentiles are unreliable", r.DroppedSamples))
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 // dominatedByRecurringSpikes: low baseline but recurring patterns explain the peaks.

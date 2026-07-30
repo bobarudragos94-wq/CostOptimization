@@ -22,9 +22,11 @@
 5. Process disk-I/O attribution requires privileges the default service user
    may lack (per-process io counters); degraded → attribution falls back to
    CPU/memory evidence, reported in health.
-6. Network spikes are collected per NIC but the `net` spike rule ships
-   disabled by default (no per-process network attribution without packet
-   inspection, which is out of scope by design).
+6. The `net` spike rule fires on interface utilization and requires a known
+   link speed (available via sysfs on Linux; not detected on Windows in v1,
+   where the rule is inert). Per-process *network* attribution remains out of
+   scope by design (needs packet inspection); net spikes fall back to CPU-based
+   process ranking with that noted in the evidence.
 7. Executable hashing (`exe_sha256`) is schema-supported but not computed in
    v1 (cost/benefit: hashing large binaries during spikes).
 8. Disk error counters (SMART) are not collected — requires elevated ioctls.
@@ -56,8 +58,14 @@
 17. Pseudonymization (privacy mode) currently covers SQL Agent job names
     only; full hostname/process pseudonymization is schema-ready but
     unimplemented.
-18. Bundles are integrity-protected but not source-authenticated (no
-    per-agent signing keys yet) — see THREAT_MODEL.md residual risk 1.
+18. **Bundles are integrity-protected and confidentiality-protected but NOT
+    source-authenticated**: anyone holding the (public) recipient key can
+    produce a validly-encrypted bundle. Import-side mitigations (host-ID /
+    hostname / config-hash consistency checks, duplicate-bundle detection,
+    size limits) raise the bar but are not signatures. Do not represent
+    bundle contents as cryptographically attributable to a specific server
+    until per-agent signing keys exist (planned v2) — see THREAT_MODEL.md
+    residual risk 1.
 19. Report HTML is intentionally minimal (self-contained, no JS); rich
     interactive reporting is a v2 concern.
 

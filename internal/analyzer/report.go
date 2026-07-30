@@ -3,6 +3,7 @@ package analyzer
 import (
 	"fmt"
 	"html"
+	"sort"
 	"strings"
 	"time"
 )
@@ -55,6 +56,14 @@ func RenderMarkdown(r *Report) string {
 		w("| Disk I/O | latency P95 %.1f ms, busy P95 %.0f%% |", h.DiskLatencyP95MS, h.DiskBusyP95Pct)
 		w("| Network | rx P95 %.1f MB/s, tx P95 %.1f MB/s |", h.NetRxP95MBs, h.NetTxP95MBs)
 		w("| Spikes | %d event(s), %d recurring pattern(s) |", h.SpikeCount, len(h.Patterns))
+		if len(h.DegradedCollectors) > 0 {
+			var degs []string
+			for c, st := range h.DegradedCollectors {
+				degs = append(degs, c+" ("+st+")")
+			}
+			sort.Strings(degs)
+			w("| ⚠️ Degraded collectors | %s |", strings.Join(degs, "; "))
+		}
 		if len(h.SQLInstances) > 0 {
 			w("| SQL instances | %s |", strings.Join(h.SQLInstances, ", "))
 		}
@@ -105,12 +114,14 @@ func RenderMarkdown(r *Report) string {
 			w("| Host RAM | %.0f GB |", s.HostRAMGB)
 			w("| min / max server memory | %d MB / %s |", s.MinServerMemMB,
 				ternary(s.MaxIsUnlimited, "UNLIMITED DEFAULT (2147483647)", fmt.Sprintf("%d MB", s.MaxServerMemMB)))
-			w("| SQL process memory | %.1f GB (%.0f%% of host) |", s.SQLProcessMemGB, s.SQLMemPctOfHost)
-			w("| Total / Target Server Memory | %.1f / %.1f GB |", s.TotalServerMemGB, s.TargetServerMemGB)
+			w("| SQL process memory P50/P95/max | %.1f / %.1f / %.1f GB (P95 = %.0f%% of host) |",
+				s.SQLProcessMem.P50, s.SQLProcessMem.P95, s.SQLProcessMem.Max, s.SQLMemPctOfHost)
+			w("| Total Server Memory P50/P95/max | %.1f / %.1f / %.1f GB (Target %.1f GB) |",
+				s.TotalServerMem.P50, s.TotalServerMem.P95, s.TotalServerMem.Max, s.TargetServerMemGB)
 			if s.NonBufferMemGB > 0 {
 				w("| Memory outside memory manager | %.1f GB |", s.NonBufferMemGB)
 			}
-			w("| OS memory headroom | %.1f GB |", s.OSHeadroomGB)
+			w("| OS memory headroom (observed avail P5) | %.1f GB |", s.OSHeadroomGB)
 			w("| Engine uptime | %.1f days |", s.EngineUptimeDays)
 			w("| PLE P5 / grants pending max | %d s / %d |", s.PLEP5, s.GrantsPendingMax)
 			w("| Batch req P95 / SQL CPU P95 | %.0f/s / %.0f%% |", s.BatchReqP95, s.SQLCPUP95)

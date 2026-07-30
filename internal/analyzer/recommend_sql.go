@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 
 	"github.com/bobarudragos94-wq/costoptimization/internal/analyzer/stats"
 	"github.com/bobarudragos94-wq/costoptimization/internal/model"
@@ -43,7 +44,16 @@ func analyzeSQLInstance(h *HostData, inv *model.SQLInstanceInventory, hostReport
 	}
 
 	samples := h.SQLSamples[inv.InstanceKey]
-	if inv.CollectionLevel == model.SQLLevelProcessOnly || len(samples) == 0 {
+	// Deep telemetry that never produced usable memory data is process-only
+	// monitoring in practice, whatever the inventory claims.
+	usable := 0
+	for _, s := range samples {
+		if s.PhysicalMemoryInUseKB > 0 || s.TotalServerMemoryKB > 0 {
+			usable++
+		}
+	}
+	if inv.CollectionLevel == model.SQLLevelProcessOnly || usable == 0 {
+		r.CollectionLevel = model.SQLLevelProcessOnly
 		r.Category = CatMonitorLonger
 		r.Recommendation = "SQL Server detected; deep SQL telemetry unavailable. Only process-level data exists. Grant the documented least-privilege login (VIEW SERVER STATE) and monitor again for memory-configuration analysis."
 		r.ValidationRequired = true
@@ -55,9 +65,12 @@ func analyzeSQLInstance(h *HostData, inv *model.SQLInstanceInventory, hostReport
 	}
 
 	latest := samples[len(samples)-1]
+	var procMemGB, totalMemGB []float64
 	var ples, grants, batch, sqlcpu, readLat []float64
 	waitAgg := map[string]float64{}
 	for _, s := range samples {
+		procMemGB = append(procMemGB, float64(s.PhysicalMemoryInUseKB)/(1<<20))
+		totalMemGB = append(totalMemGB, float64(s.TotalServerMemoryKB)/(1<<20))
 		ples = append(ples, float64(s.PLESeconds))
 		grants = append(grants, float64(s.MemoryGrantsPending))
 		batch = append(batch, s.BatchRequestsPS)
@@ -94,11 +107,21 @@ func analyzeSQLInstance(h *HostData, inv *model.SQLInstanceInventory, hostReport
 	}
 
 	r.SQLProcessMemGB = round1(float64(latest.PhysicalMemoryInUseKB) / (1 << 20))
+	r.SQLProcessMem = stats.Summarize(procMemGB)
+	r.TotalServerMem = stats.Summarize(totalMemGB)
 	r.TotalServerMemGB = round1(float64(latest.TotalServerMemoryKB) / (1 << 20))
 	r.TargetServerMemGB = round1(float64(latest.TargetServerMemoryKB) / (1 << 20))
 	if r.HostRAMGB > 0 {
-		r.SQLMemPctOfHost = round1(r.SQLProcessMemGB / r.HostRAMGB * 100)
-		r.OSHeadroomGB = round1(r.HostRAMGB - r.SQLProcessMemGB)
+		r.SQLMemPctOfHost = round1(r.SQLProcessMem.P95 / r.HostRAMGB * 100)
+	}
+	// Real OS headroom: the observed 5th-percentile available memory on the
+	// host — which accounts for every consumer (other instances, apps, OS
+	// caches) — NOT "host RAM minus SQL process", which overstates headroom
+	// on any host running more than SQL.
+	if hostReport.MemAvailP5GB > 0 {
+		r.OSHeadroomGB = hostReport.MemAvailP5GB
+	} else if r.HostRAMGB > 0 {
+		r.OSHeadroomGB = round1(r.HostRAMGB - r.SQLProcessMem.P95)
 	}
 	if r.MaxServerMemMB > 0 && !r.MaxIsUnlimited {
 		r.SQLMemPctOfMax = round1(float64(latest.TotalServerMemoryKB) / 1024 / float64(r.MaxServerMemMB) * 100)
@@ -175,11 +198,32 @@ func classifySQL(r *SQLReport, h *HostData, inv *model.SQLInstanceInventory, hos
 	targetReached := latestSample(h, inv.InstanceKey) != nil &&
 		float64(latestSample(h, inv.InstanceKey).TotalServerMemoryKB) >= 0.95*float64(latestSample(h, inv.InstanceKey).TargetServerMemoryKB)
 
+	// Degraded SQL collection for this instance invalidates memory/pressure
+	// conclusions: block anything that could justify a reduction.
+	sqlDegraded := []string{}
+	for coll, status := range h.DegradedCollectors {
+		if strings.HasPrefix(coll, "sql.") {
+			sqlDegraded = append(sqlDegraded, coll+": "+status)
+		}
+	}
+	sort.Strings(sqlDegraded)
+
 	switch {
 	case r.HARole == "SECONDARY":
 		r.Category = CatHADRConstraint
 		r.Recommendation = fmt.Sprintf("Secondary replica of availability group %s. Do not size from its own (expectedly idle) workload — it must absorb the primary's load after failover. Assess the replica group together.", r.HAGroup)
 		r.Rationale = append(r.Rationale, "availability-group SECONDARY role detected")
+
+	case r.HARole == "fci":
+		r.Category = CatHADRConstraint
+		r.Recommendation = "Failover cluster instance: the hosting node must be sized for the full clustered workload, and the partner node's capacity matters for failover. Evaluate the cluster as a unit; topology-level validation required before any resize."
+		r.Rationale = append(r.Rationale, "SERVERPROPERTY('IsClustered') = 1")
+
+	case len(sqlDegraded) > 0:
+		r.Category = CatInsufficientData
+		r.Recommendation = "SQL telemetry collection was degraded during the window; memory and pressure conclusions are unreliable. Fix the collection problems (see rationale) and monitor again before considering any change."
+		r.Confidence = math.Min(r.Confidence, 0.2)
+		r.Rationale = append(r.Rationale, sqlDegraded...)
 
 	case multi && hostMB > 0 && (unlimitedCount > 0 || combinedMaxMB+osReserveMB > hostMB):
 		r.Category = CatMultiInstanceRisk
@@ -216,12 +260,29 @@ func classifySQL(r *SQLReport, h *HostData, inv *model.SQLInstanceInventory, hos
 		r.Recommendation = fmt.Sprintf("Engine uptime is only %.1f days; Total vs Target Server Memory and cache sizing are not yet meaningful.", r.EngineUptimeDays)
 
 	case r.SQLCPUP95 < 40 && float64(r.PLEP5) > 3600 && r.GrantsPendingMax == 0 && r.SQLMemPctOfMax > 95:
-		r.Category = CatPossibleRightsizing
+		// Suggested reduction target: peak Total Server Memory + 20% cache
+		// headroom — but a "reduction" must actually reduce. The suggestion
+		// is hard-capped below the configured max and dropped entirely when
+		// the saving is not meaningful (< 15% of the current limit).
+		curMaxGB := float64(r.MaxServerMemMB) / 1024
 		peakTotal := maxTotalServerMemGB(h, inv.InstanceKey)
 		lo := roundGB(peakTotal * 1.2)
-		r.SuggestedMaxMemGB = &CapacityRange{MinRAMGB: lo, MaxRAMGB: roundGB(lo * 1.25),
-			Note: "based on peak Total Server Memory + 20% cache headroom; PLE must be re-checked after any reduction"}
-		r.Recommendation = fmt.Sprintf("The buffer cache is full (as designed) but PLE stays high (P5 %ds) with no pending grants and low SQL CPU — memory demand appears comfortably met. A staged max-server-memory reduction toward %.0f–%.0f GB may be possible. High memory usage alone is NOT proof of overprovisioning; validate after each step.", r.PLEP5, r.SuggestedMaxMemGB.MinRAMGB, r.SuggestedMaxMemGB.MaxRAMGB)
+		hi := roundGB(lo * 1.15)
+		if hi >= curMaxGB {
+			hi = roundGB(curMaxGB) - 1
+		}
+		if lo >= hi {
+			lo = hi - 1
+		}
+		if curMaxGB > 0 && hi <= curMaxGB*0.85 && lo > 0 {
+			r.Category = CatPossibleRightsizing
+			r.SuggestedMaxMemGB = &CapacityRange{MinRAMGB: lo, MaxRAMGB: hi,
+				Note: fmt.Sprintf("peak Total Server Memory %.0f GB + 20%% cache headroom, capped below the current %.0f GB limit; reduce in stages and re-check PLE after each step", peakTotal, curMaxGB)}
+			r.Recommendation = fmt.Sprintf("The buffer cache is full (as designed) but PLE stays high (P5 %ds) with no pending grants and low SQL CPU — memory demand appears comfortably met. A staged max-server-memory reduction toward %.0f–%.0f GB may be possible. High memory usage alone is NOT proof of overprovisioning; validate after each step.", r.PLEP5, lo, hi)
+		} else {
+			r.Category = CatNoChange
+			r.Recommendation = fmt.Sprintf("Memory demand is comfortably met (PLE P5 %ds, no pending grants), but the observed cache peak (%.0f GB) sits too close to the configured %.0f GB limit for a reduction to be worthwhile or safe.", r.PLEP5, peakTotal, curMaxGB)
+		}
 		r.Rationale = append(r.Rationale,
 			fmt.Sprintf("SQL CPU P95 %.0f%%, PLE P5 %ds, grants pending max %d", r.SQLCPUP95, r.PLEP5, r.GrantsPendingMax))
 

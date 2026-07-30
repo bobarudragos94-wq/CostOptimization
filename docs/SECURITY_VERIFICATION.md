@@ -39,6 +39,12 @@ dependency. The systemd unit additionally enforces `IPAddressDeny=any` /
   `go version` with the release.
 * Vulnerability scanning workflow: run `govulncheck ./...` (offline DB copy
   supported) per release; triage into docs/LIMITATIONS.md.
+  **Last run** (hardening branch, Go 1.25.12, deps upgraded): *0
+  vulnerabilities in called code, 0 in imported packages*; 1 module-level
+  advisory remains — GO-2026-5932, the deprecation of
+  `golang.org/x/crypto/openpgp`, which ships inside the x/crypto module but
+  is never imported by this product (bundle encryption uses age's
+  ChaCha20-Poly1305); no fix exists or is needed.
 * Signed-build readiness: single static binary per OS — signable with
   standard tooling (Authenticode `signtool` for `ura-agent.exe`, GPG detached
   signatures for ELF). No plugin loading, no self-modification, no updater.
