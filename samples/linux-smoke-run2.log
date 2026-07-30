@@ -1,0 +1,31 @@
+keypair written to <workdir>/smoke-evidence/keys
+  identity.txt   PRIVATE — keep on the analyzer machine only
+  recipient.txt  public  — set as agent.recipient in agent.yaml
+recipient: age108d2jrhz09xxm0fp660hrvwc7w6q6n52t3tpq0c02wktecayk9vsmw0wu8
+[01:06:58] baseline memory 4% -> threshold 16%, allocation 4 GiB
+[01:06:58] step 1: placeholder rejection
+error: agent.recipient is still the template placeholder "age1REPLACE_ME"; run 'ura-analyzer keygen' on the analyzer machine and paste the content of recipient.txt
+[01:06:58] PASS placeholder rejected
+config OK (hash 06547c52d5e6e2f8)
+[01:06:58] step 2: start agent
+[01:07:03] socket-check pid=32555: 0 socket fds
+[01:07:03] step 3: baseline 210s
+[01:10:33] step 3a: CPU spike (per-core busy loops, 150s)
+[01:13:23] socket-check pid=32555: 0 socket fds
+[01:13:23] step 3b: memory spike (4 GiB held 120s)
+[01:15:53] step 3c: disk spike (sync writes, 120s)
+[01:20:03] step 4: SIGKILL + restart
+[01:20:16] restarted pid=2738
+[01:20:16] socket-check pid=2738: 0 socket fds
+[01:20:16] step 5: remaining collection 60s
+[01:21:16] socket-check pid=2738: 0 socket fds
+[01:21:16] step 6: stop, export, analyze
+<workdir>/smoke-evidence/export/ura-8b7e2fc672fe6a5bf961a62a28fe8988-20260730T012116Z.urab
+imported 1 bundle(s): 1 ok, 0 partial, 0 rejected
+hosts analyzed: 1, SQL instances: 0, spikes: 2
+reports written to <workdir>/smoke-evidence/reports
+[01:21:16] step 7: assertions
+  cpu      peak=   100.0 dur=   150s proc='bash' job='' conf=0.5
+  memory   peak=    29.7 dur=   145s proc='python3' job='' conf=0.3
+RESULT: PASS
+[01:21:16] SMOKE COMPLETE

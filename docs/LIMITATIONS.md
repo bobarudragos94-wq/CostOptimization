@@ -30,6 +30,12 @@
 7. Executable hashing (`exe_sha256`) is schema-supported but not computed in
    v1 (cost/benefit: hashing large binaries during spikes).
 8. Disk error counters (SMART) are not collected — requires elevated ioctls.
+8a. **Disk-I/O spike detection is not yet validated end-to-end.** Unit tests
+    cover the detector, but neither Linux smoke run captured a disk event
+    under 120 s of synced writes (container block-device accounting; see
+    docs/PILOT_EVIDENCE_LINUX.md). CPU and memory spike capture *are*
+    validated on real hardware. Exercise the disk path explicitly during the
+    Windows pilot before relying on disk-spike findings.
 9. Sub-15-second bursts between samples can be missed; by design (overhead
    trade-off, documented sampling theory limit).
 

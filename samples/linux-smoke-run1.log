@@ -1,0 +1,39 @@
+keypair written to <workdir>/keys
+  identity.txt   PRIVATE — keep on the analyzer machine only
+  recipient.txt  public  — set as agent.recipient in agent.yaml
+recipient: age1hsdrtffuz5d92rz4epv0qzwjgafqwy6ud97zutfxssxpn63syauqrrsgul
+[00:42:26] SMOKE: validating config (placeholder rejection control first)
+error: agent.recipient is still the template placeholder "age1REPLACE_ME"; run 'ura-analyzer keygen' on the analyzer machine and paste the content of recipient.txt
+[00:42:26] PASS: placeholder recipient rejected
+config OK (hash 8c8bf6f996895707)
+[00:42:26] SMOKE: starting agent
+[00:42:31] agent pid=20345
+[00:42:31] socket-check: 0 socket fds (expect 0; no SQL Server on this host)
+[00:42:31] PHASE 1: 6 min quiet baseline
+[00:48:31] PHASE 2: CPU spike (3 busy loops, 150s)
+[00:48:31] socket-check: 0 socket fds (expect 0; no SQL Server on this host)
+[00:51:21] PHASE 3: memory spike (4 GiB anonymous allocation held 120s)
+[00:53:41] PHASE 4: disk I/O spike (sync writes, 120s)
+[00:56:01] PHASE 5: forced kill (SIGKILL) + restart recovery
+[00:56:14] restarted pid=30582
+[00:56:14] socket-check: 0 socket fds (expect 0; no SQL Server on this host)
+[00:56:14] PHASE 6: continue collection 8 min (post-restart)
+[01:04:14] PHASE 7: clean stop + manual export
+<workdir>/export/ura-60b79d825bb1daee638e8928a6f21f85-20260730T010414Z.urab
+total 64
+drwxr-x--- 2 root root  4096 Jul 30 01:04 .
+drwxr-xr-x 5 root root  4096 Jul 30 01:04 ..
+-rw-r----- 1 root root 56320 Jul 30 01:04 ura-60b79d825bb1daee638e8928a6f21f85-20260730T010414Z.urab
+[01:04:14] PHASE 8: analyzer import + report
+imported 1 bundle(s): 1 ok, 0 partial, 0 rejected
+hosts analyzed: 1, SQL instances: 0, spikes: 1
+reports written to <workdir>/reports
+[01:04:15] PHASE 9: assertions
+host=vm coverage=95.7% category=insufficient_data
+spikes captured: 1 resources=['cpu']
+  cpu      peak=    98.0 dur=   150s proc='bash' conf=0.7
+FAIL: memory spike not captured
+WARN: no disk spike captured (container I/O accounting)
+data quality entries: 0
+RESULT: FAIL
+[01:04:15] SMOKE COMPLETE

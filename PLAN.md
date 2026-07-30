@@ -187,15 +187,20 @@ MSI/DEB/RPM packaging (zip + scripts instead), binary signing (readiness documen
       orphan cleanup, streaming per-host analysis), security/release (bundle
       size limits + duplicate detection, Go 1.25.12, govulncheck clean for
       called code). Windows smoke-test kit: deploy/windows/smoke-test.ps1 +
-      docs/SMOKE_TEST_WINDOWS.md. Linux smoke test executed with real
-      controlled spikes (see docs/PILOT_EVIDENCE_LINUX.md).
+      docs/SMOKE_TEST_WINDOWS.md. Two Linux smoke runs executed with real
+      controlled spikes; run 1 found a real attribution bug (sub-hourly cron
+      entries correlating with every spike), run 2 passed after the fix.
+      Evidence + what remains unvalidated: docs/PILOT_EVIDENCE_LINUX.md.
 - [ ] M8b (REQUIRED before pilot sign-off — needs a real Windows machine):
-      run deploy/windows/smoke-test.ps1 on the pilot laptop (≥30 min),
-      review smoke-evidence/, validate registry SQL discovery + SCM service
-      mapping + integrated-auth SQL collection against a live instance,
-      wire binary signing; consider MSI/DEB/RPM. NOTHING in M8a substitutes
-      for this — the Windows paths are still cross-compiled and unit-tested
-      only.
+      1. run `deploy/windows/smoke-test.ps1 -Minutes 45` on the pilot laptop,
+         review `smoke-evidence/` (results.json, sockets.log, report);
+      2. confirm the disk-I/O spike path fires on a real volume (it did not
+         fire in the Linux container — LIMITATIONS 8a);
+      3. validate registry SQL discovery + SCM service→PID mapping +
+         integrated-auth deep SQL collection against a live instance;
+      4. wire binary signing (Authenticode); consider MSI/DEB/RPM.
+      NOTHING in M8a substitutes for this — the Windows paths are still
+      cross-compiled and unit-tested only.
 
 ### Notes for the next agent
 
